@@ -1,6 +1,8 @@
 using HAcomms.Models;
 using Microsoft.Extensions.Configuration;
 using NoeticTools.Net2HassMqtt;
+using System.Windows.Forms;
+using HAcomms.Tools;
 
 namespace HAcomms;
 
@@ -13,8 +15,12 @@ public partial class Main : Form {
     public Main() {
         InitializeComponent();
         InitMqtt();
-
-        // _model.UpdateStatus();
+        
+        var windows = WindowsTools.GetOpenWindows();
+        foreach (var kvp in windows) {
+            string title = kvp.Value;
+            this.ListBoxWindows.Items.Add(title);
+        }
     }
 
     public void SetMqttStatus(MqttStatus status) {
@@ -30,28 +36,48 @@ public partial class Main : Form {
         var appConfig = new ConfigurationBuilder().AddUserSecrets<Main>().Build();
         _model = new HAcommsModel();
         _bridge = _model.BuildBridge(appConfig);
-        
+
         SetMqttStatus(MqttStatus.Connecting);
         await _bridge.StartAsync();
-        _initialized = true;
         SetMqttStatus(MqttStatus.Connected);
+
         _model.UpdateStatus();
+        OnInitialization();
+    }
+
+    private void OnInitialization() {
+        if (_initialized) {
+            return;
+        }
+
+        _initialized = true;
+        _model!.UpdateStatus();
     }
 
     private void NotifyIcon_MouseClick(object sender, MouseEventArgs e) {
-        if (!_initialized)
+        if (!_initialized) {
             return;
-        _model.InGoogleMeets = !_model.InGoogleMeets;
+        }
+
+        _model!.InGoogleMeets = !_model.InGoogleMeets;
     }
 
     private void NotifyIcon_DoubleClick(object sender, EventArgs e) { this.Show(); }
 
+    private void ListBoxWindows_SelectedIndexChanged(object sender, EventArgs e) {
+        string? curItem = this.ListBoxWindows.SelectedItem?.ToString();
+        this.TextBoxEntryEditor.Text = "/" + (curItem ?? "") + "/";
+    }
+
     private async void Main_Closing(object sender, EventArgs e) {
+        this.NotifyIcon.Visible = false;
+        this.NotifyIcon.Icon?.Dispose();
+        this.NotifyIcon.Dispose();
+
         if (!_initialized)
             return;
 
-        this.NotifyIcon.Visible = false;
-        await _bridge.StopAsync();
+        await _bridge!.StopAsync();
     }
 
     protected override void WndProc(ref Message m) {
