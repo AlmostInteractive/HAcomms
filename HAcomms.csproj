@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseWindowsForms>true</UseWindowsForms>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <ApplicationIcon>tray.ico</ApplicationIcon>
+        <UserSecretsId>6e3aa6e2-6971-48e8-8466-abb059fb27e1</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <FrameworkReference Include="Microsoft.WindowsDesktop.App"/>
+      <PackageReference Include="NoeticTools.Net2HassMqtt" Version="0.3.0-alpha.78-1" />
+      <PackageReference Include="Specshell.NDde" Version="4.0.1-beta.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Update="Properties\Resources.resx">
+        <Generator>ResXFileCodeGenerator</Generator>
+      </EmbeddedResource>
+    </ItemGroup>
+
+</Project>

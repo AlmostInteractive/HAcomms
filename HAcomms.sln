@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HAcomms", "HAcomms.csproj", "{5769727C-7910-4FFB-A46F-89653A5BF198}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5769727C-7910-4FFB-A46F-89653A5BF198}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5769727C-7910-4FFB-A46F-89653A5BF198}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5769727C-7910-4FFB-A46F-89653A5BF198}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5769727C-7910-4FFB-A46F-89653A5BF198}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
