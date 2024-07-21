@@ -12,16 +12,7 @@ public partial class Main : Form {
     private INet2HassMqttBridge? _bridge;
 
 
-    public Main() {
-        InitializeComponent();
-        InitMqtt();
-        
-        var windows = WindowsTools.GetOpenWindows();
-        foreach (var kvp in windows) {
-            string title = kvp.Value;
-            this.ListBoxWindows.Items.Add(title);
-        }
-    }
+    public Main() { InitializeComponent(); }
 
     public void SetMqttStatus(MqttStatus status) {
         this.LblStatusMqtt.Text = Enum.GetName(typeof(MqttStatus), status);
@@ -41,7 +32,6 @@ public partial class Main : Form {
         await _bridge.StartAsync();
         SetMqttStatus(MqttStatus.Connected);
 
-        _model.UpdateStatus();
         OnInitialization();
     }
 
@@ -54,6 +44,32 @@ public partial class Main : Form {
         _model!.UpdateStatus();
     }
 
+    private void RefreshWindows() {
+        var windows = WindowsTools.GetOpenWindows();
+        this.ListBoxWindows.Items.Clear();
+        foreach (var kvp in windows) {
+            string title = kvp.Value;
+            this.ListBoxWindows.Items.Add(title);
+        }
+    }
+
+    private void RefreshTabs() {
+        var windows = WindowsTools.GetOpenWindows();
+        var firefoxes = windows.Where(kvp => kvp.Value.Contains("Mozilla Firefox")).ToDictionary();
+        var chromes = windows.Where(kvp => kvp.Value.Contains("Google Chrome")).ToDictionary();
+        
+        this.ListBoxTabs.Items.Clear();
+        foreach (var tab in Chrome.GetAllTabTitles(chromes.Keys)) {
+            this.ListBoxTabs.Items.Add(tab);
+        }
+    }
+
+    private void Main_Shown(object sender, EventArgs e) {
+        InitMqtt();
+        RefreshWindows();
+        RefreshTabs();
+    }
+
     private void NotifyIcon_MouseClick(object sender, MouseEventArgs e) {
         if (!_initialized) {
             return;
@@ -64,10 +80,30 @@ public partial class Main : Form {
 
     private void NotifyIcon_DoubleClick(object sender, EventArgs e) { this.Show(); }
 
-    private void ListBoxWindows_SelectedIndexChanged(object sender, EventArgs e) {
-        string? curItem = this.ListBoxWindows.SelectedItem?.ToString();
-        this.TextBoxEntryEditor.Text = "/" + (curItem ?? "") + "/";
+    private void ListBoxWindowsTabs_SelectedIndexChanged(object sender, EventArgs e) {
+        var listBox = sender as ListBox;
+        if (listBox?.SelectedItem == null) {
+            return;
+        }
+
+        string? curItem = listBox.SelectedItem.ToString();
+
+        if (listBox == this.ListBoxWindows) {
+            this.ListBoxTabs.SelectedItem = null;
+            this.RbApplication.Checked = true;
+        } else {
+            this.ListBoxWindows.SelectedItem = null;
+            this.RbTab.Checked = true;
+        }
+
+        this.TextBoxEntryEditor.Text = (curItem ?? "");
     }
+
+    private void BtnAdd_Click(object sender, EventArgs e) { throw new System.NotImplementedException(); }
+
+    private void BtnRefreshWindows_Click(object sender, EventArgs e) { RefreshWindows(); }
+
+    private void BtnRefreshTabs_Click(object sender, EventArgs e) { RefreshTabs(); }
 
     private async void Main_Closing(object sender, EventArgs e) {
         this.NotifyIcon.Visible = false;

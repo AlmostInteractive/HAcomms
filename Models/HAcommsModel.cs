@@ -37,7 +37,7 @@ public partial class HAcommsModel : ObservableObject {
         long start = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
         var windows = WindowsTools.GetOpenWindows();
         
-        var firefoxes = windows.Where(kvp => kvp.Value.Contains("Mozille Firefox")).ToDictionary();
+        var firefoxes = windows.Where(kvp => kvp.Value.Contains("Mozilla Firefox")).ToDictionary();
         var chromes = windows.Where(kvp => kvp.Value.Contains("Google Chrome")).ToDictionary();
 
         var chromeTabs = Chrome.GetAllTabTitles(chromes.Keys);
