@@ -262,6 +262,7 @@ partial class Main {
         // 
         // Main
         //
+        this.Icon = (System.Drawing.Icon)(Properties.Resources.NotifyIcon_Icon);
         this.MaximizeBox = false;
         this.FormBorderStyle = FormBorderStyle.FixedSingle;
         this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
