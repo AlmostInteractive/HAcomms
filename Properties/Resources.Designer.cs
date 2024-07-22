@@ -60,7 +60,7 @@ namespace HAcomms.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to HaCommsClient.
+        ///   Looks up a localized string similar to hacommsclient.
         /// </summary>
         internal static string MqttClientId {
             get {

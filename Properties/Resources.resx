@@ -44,6 +44,6 @@
         </value>
     </data>
     <data name="MqttClientId" xml:space="preserve">
-        <value>HaCommsClient</value>
+        <value>hacommsclient</value>
     </data>
 </root>

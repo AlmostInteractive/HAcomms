@@ -1,7 +1,6 @@
 using HAcomms.Models;
 using Microsoft.Extensions.Configuration;
 using NoeticTools.Net2HassMqtt;
-using System.Windows.Forms;
 using HAcomms.Tools;
 
 namespace HAcomms;
@@ -41,7 +40,6 @@ public partial class Main : Form {
         }
 
         _initialized = true;
-        _model!.UpdateStatus();
     }
 
     private void RefreshWindows() {
@@ -57,7 +55,7 @@ public partial class Main : Form {
         var windows = WindowsTools.GetOpenWindows();
         var firefoxes = windows.Where(kvp => kvp.Value.Contains("Mozilla Firefox")).ToDictionary();
         var chromes = windows.Where(kvp => kvp.Value.Contains("Google Chrome")).ToDictionary();
-        
+
         this.ListBoxTabs.Items.Clear();
         foreach (var tab in Chrome.GetAllTabTitles(chromes.Keys)) {
             this.ListBoxTabs.Items.Add(tab);
@@ -75,7 +73,7 @@ public partial class Main : Form {
             return;
         }
 
-        _model!.InGoogleMeets = !_model.InGoogleMeets;
+        _model!.WatchedEntriesPresent = !_model.WatchedEntriesPresent;
     }
 
     private void NotifyIcon_DoubleClick(object sender, EventArgs e) { this.Show(); }
