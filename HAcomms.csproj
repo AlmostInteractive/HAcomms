@@ -11,9 +11,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <FrameworkReference Include="Microsoft.WindowsDesktop.App"/>
+      <FrameworkReference Include="Microsoft.WindowsDesktop.App" />
       <PackageReference Include="NoeticTools.Net2HassMqtt" Version="0.3.0-alpha.78-1" />
       <PackageReference Include="Specshell.NDde" Version="4.0.1-beta.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Properties\Settings.Designer.cs">
+        <DesignTimeSharedInput>True</DesignTimeSharedInput>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Settings.settings</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -24,6 +32,13 @@
         <Generator>ResXFileCodeGenerator</Generator>
         <LastGenOutput>Main.Designer.cs</LastGenOutput>
       </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Properties\Settings.settings">
+        <Generator>SettingsSingleFileGenerator</Generator>
+        <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+      </None>
     </ItemGroup>
 
 </Project>

@@ -152,7 +152,7 @@ partial class Main {
         this.ListBoxWindows.Name = "ListBoxWindows";
         this.ListBoxWindows.Size = new System.Drawing.Size(256, 256);
         this.ListBoxWindows.TabIndex = 0;
-        this.ListBoxWindows.SelectedIndexChanged += new System.EventHandler(this.ListBoxWindowsTabs_SelectedIndexChanged);
+        this.ListBoxWindows.SelectedIndexChanged += new System.EventHandler(this.ListBox_SelectedIndexChanged);
         // 
         // ListBoxTabs
         // 
@@ -161,7 +161,7 @@ partial class Main {
         this.ListBoxTabs.Name = "ListBoxTabs";
         this.ListBoxTabs.Size = new System.Drawing.Size(256, 256);
         this.ListBoxTabs.TabIndex = 0;
-        this.ListBoxTabs.SelectedIndexChanged += new System.EventHandler(this.ListBoxWindowsTabs_SelectedIndexChanged);
+        this.ListBoxTabs.SelectedIndexChanged += new System.EventHandler(this.ListBox_SelectedIndexChanged);
         // 
         // ListBoxEntries
         // 
@@ -170,6 +170,7 @@ partial class Main {
         this.ListBoxEntries.Name = "ListBoxEntries";
         this.ListBoxEntries.Size = new System.Drawing.Size(256, 256);
         this.ListBoxEntries.TabIndex = 0;
+        this.ListBoxEntries.SelectedIndexChanged += new System.EventHandler(this.ListBox_SelectedIndexChanged);
         // 
         // TextBoxEntryEditor
         // 
@@ -258,6 +259,7 @@ partial class Main {
         this.BtnRemove.TabIndex = 1;
         this.BtnRemove.Text = "Remove Entry";
         this.BtnRemove.UseVisualStyleBackColor = true;
+        this.BtnRemove.Click += new System.EventHandler(this.BtnRemove_Click);
 
         // 
         // Main

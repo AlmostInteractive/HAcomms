@@ -1,3 +1,4 @@
+using System.Text.Json;
 using HAcomms.Models;
 using Microsoft.Extensions.Configuration;
 using NoeticTools.Net2HassMqtt;
@@ -9,13 +10,36 @@ public partial class Main : Form {
     private bool _initialized = false;
     private HAcommsModel? _model;
     private INet2HassMqttBridge? _bridge;
+    private List<WatchedEntity> _watchedEntities = [];
 
 
-    public Main() { InitializeComponent(); }
+    public Main() {
+        InitializeComponent();
+        LoadWatchedEntities();
+    }
 
     public void SetMqttStatus(MqttStatus status) {
         this.LblStatusMqtt.Text = Enum.GetName(typeof(MqttStatus), status);
         Console.WriteLine("Update MQTT status: {0}", this.LblStatusMqtt.Text);
+    }
+
+    private void LoadWatchedEntities() {
+        _watchedEntities.Clear();
+        var entities = JsonSerializer.Deserialize<WatchedEntity[]>(Properties.Settings.Default.WatchedEntities);
+        if (entities != null) {
+            _watchedEntities.AddRange(entities);
+        }
+
+        this.ListBoxEntries.Items.Clear();
+        foreach (var we in _watchedEntities) {
+            AddWatchedEntryListItem(we);
+        }
+    }
+
+    private void SaveWatchedEntities() {
+        string json = JsonSerializer.Serialize(_watchedEntities);
+        Properties.Settings.Default.WatchedEntities = json;
+        Properties.Settings.Default.Save();
     }
 
     private async void InitMqtt() {
@@ -78,7 +102,7 @@ public partial class Main : Form {
 
     private void NotifyIcon_DoubleClick(object sender, EventArgs e) { this.Show(); }
 
-    private void ListBoxWindowsTabs_SelectedIndexChanged(object sender, EventArgs e) {
+    private void ListBox_SelectedIndexChanged(object sender, EventArgs e) {
         var listBox = sender as ListBox;
         if (listBox?.SelectedItem == null) {
             return;
@@ -88,16 +112,60 @@ public partial class Main : Form {
 
         if (listBox == this.ListBoxWindows) {
             this.ListBoxTabs.SelectedItem = null;
+            this.ListBoxEntries.SelectedItem = null;
             this.RbApplication.Checked = true;
+        } else if (listBox == this.ListBoxTabs) {
+            this.ListBoxWindows.SelectedItem = null;
+            this.ListBoxEntries.SelectedItem = null;
+            this.RbTab.Checked = true;
         } else {
             this.ListBoxWindows.SelectedItem = null;
-            this.RbTab.Checked = true;
+            this.ListBoxTabs.SelectedItem = null;
+            
+            var we = _watchedEntities[listBox.SelectedIndex];
+            if (we.IsTab) {
+                this.RbTab.Checked = true;
+            } else {
+                this.RbApplication.Checked = true;
+            }
+            if (we.IsRegex) {
+                this.RbRegex.Checked = true;
+            } else {
+                this.RbLiteral.Checked = true;
+            }
+
+            curItem = curItem?.Remove(curItem.Length - 1).Substring(5);
         }
 
         this.TextBoxEntryEditor.Text = (curItem ?? "");
     }
 
-    private void BtnAdd_Click(object sender, EventArgs e) { throw new System.NotImplementedException(); }
+    private void BtnAdd_Click(object sender, EventArgs e) {
+        string entry = this.TextBoxEntryEditor.Text;
+        if (entry.Trim().Length == 0) {
+            return;
+        }
+
+        var we = new WatchedEntity() {
+            IsTab = this.RbTab.Checked,
+            IsRegex = this.RbRegex.Checked,
+            Entry = entry
+        };
+        _watchedEntities.Add(we);
+        AddWatchedEntryListItem(we);
+        SaveWatchedEntities();
+    }
+
+    private void BtnRemove_Click(object sender, EventArgs e) {
+        int idx = this.ListBoxEntries.SelectedIndex;
+        if (idx == -1) {
+            return;
+        }
+
+        _watchedEntities.RemoveAt(idx);
+        this.ListBoxEntries.Items.RemoveAt(idx);
+        SaveWatchedEntities();
+    }
 
     private void BtnRefreshWindows_Click(object sender, EventArgs e) { RefreshWindows(); }
 
@@ -112,6 +180,11 @@ public partial class Main : Form {
             return;
 
         await _bridge!.StopAsync();
+    }
+
+    private void AddWatchedEntryListItem(WatchedEntity we) {
+        string x = $"[{(we.IsTab ? "T" : "A")}] {(we.IsRegex ? "/" : "\"")}{we.Entry}{(we.IsRegex ? "/" : "\"")}";
+        this.ListBoxEntries.Items.Add(x);
     }
 
     protected override void WndProc(ref Message m) {
