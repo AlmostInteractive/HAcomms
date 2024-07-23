@@ -99,7 +99,6 @@ public partial class Main : Form {
     }
 
     private void PerformScan(object sender, EventArgs e) {
-        Console.WriteLine("Perform Scan");
         if (!_initialized || _inScan) {
             return;
         }
