@@ -14,7 +14,7 @@ internal static class Chrome {
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
-    private static Dictionary<IntPtr, List<string>> _cache = new(); 
+    private static Dictionary<IntPtr, List<string>> _cache = new();
 
 
     public static List<string> GetAllTabTitles(IEnumerable<IntPtr> hWnds) {
@@ -31,15 +31,13 @@ internal static class Chrome {
         if (titles != null) {
             return titles.Any(we.Matches);
         }
-        
+
         titles = GetWindowTabTitles(hWnd);
         _cache.Add(hWnd, titles);
         return titles.Any(we.Matches);
     }
 
-    public static void ResetCache() {
-        _cache.Clear();
-    }
+    public static void ResetCache() { _cache.Clear(); }
 
     private static List<string> GetWindowTabTitles(IntPtr hWnd, List<string>? tabTitles = null) {
         List<string> titles = [];
@@ -68,8 +66,19 @@ internal static class Chrome {
         var rootElement = AutomationElement.FromHandle(hWnd);
         Condition condition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem);
         var firstTab = rootElement.FindFirst(TreeScope.Descendants, condition);
+        if (firstTab == null) {
+            return;
+        }
+
         var parent = tree.GetParent(firstTab);
+        if (parent == null) {
+            return;
+        }
+
         var tabs = parent.FindAll(TreeScope.Children, condition);
+        if (tabs == null) {
+            return;
+        }
 
         foreach (AutomationElement tab in tabs) {
             string[] pieces = tab.Current.Name.Split(" - ");
