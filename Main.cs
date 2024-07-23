@@ -221,6 +221,7 @@ public partial class Main : Form {
         this.NotifyIcon.Visible = false;
         this.NotifyIcon.Icon?.Dispose();
         this.NotifyIcon.Dispose();
+        _scanTimer.Stop();
 
         if (!_initialized)
             return;
