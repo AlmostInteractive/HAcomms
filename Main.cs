@@ -3,6 +3,7 @@ using HAcomms.Models;
 using Microsoft.Extensions.Configuration;
 using NoeticTools.Net2HassMqtt;
 using HAcomms.Tools;
+using Timer = System.Windows.Forms.Timer;
 
 namespace HAcomms;
 
@@ -10,12 +11,18 @@ public partial class Main : Form {
     private bool _initialized = false;
     private HAcommsModel? _model;
     private INet2HassMqttBridge? _bridge;
-    private List<WatchedEntity> _watchedEntities = [];
+    private readonly List<WatchedEntity> _watchedEntities = [];
+    private Timer _scanTimer = new();
+    private bool _inScan = false;
 
 
     public Main() {
         InitializeComponent();
         LoadWatchedEntities();
+
+        _scanTimer.Interval = (int)(1.5 * 1000); // in ms
+        _scanTimer.Tick += PerformScan;
+        _scanTimer.Start();
     }
 
     public void SetMqttStatus(MqttStatus status) {
@@ -77,13 +84,51 @@ public partial class Main : Form {
 
     private void RefreshTabs() {
         var windows = WindowsTools.GetOpenWindows();
-        var firefoxes = windows.Where(kvp => kvp.Value.Contains("Mozilla Firefox")).ToDictionary();
-        var chromes = windows.Where(kvp => kvp.Value.Contains("Google Chrome")).ToDictionary();
+        var firefoxes = windows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
+        var chromes = windows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
 
         this.ListBoxTabs.Items.Clear();
         foreach (var tab in Chrome.GetAllTabTitles(chromes.Keys)) {
             this.ListBoxTabs.Items.Add(tab);
         }
+    }
+
+    private void AddWatchedEntryListItem(WatchedEntity we) {
+        string x = $"[{(we.IsTab ? "T" : "A")}] {(we.IsRegex ? "/" : "\"")}{we.Entry}{(we.IsRegex ? "/" : "\"")}";
+        this.ListBoxEntries.Items.Add(x);
+    }
+
+    private void PerformScan(object sender, EventArgs e) {
+        if (!_initialized || _inScan) {
+            return;
+        }
+
+        _inScan = true;
+
+        // search applications
+        var windows = WindowsTools.GetOpenWindows();
+
+        if (_watchedEntities.Where(we => !we.IsTab).Any(we => WindowsTools.AnyTitleMatches(we, windows))) {
+            _model.WatchedEntriesPresent = true;
+            _inScan = false;
+            return;
+        }
+
+        var firefoxes = windows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
+        var chromes = windows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
+        var tabs = _watchedEntities.Where(we => we.IsTab);
+        
+        // reset caches
+        Chrome.ResetCache();
+
+        if (tabs.Any(we => chromes.Any(kvp => Chrome.MatchesWatchedEntity(kvp.Key, we)))) {
+            _model.WatchedEntriesPresent = true;
+            _inScan = false;
+            return;
+        }
+
+        _model.WatchedEntriesPresent = false;
+        _inScan = false;
     }
 
     private void Main_Shown(object sender, EventArgs e) {
@@ -121,13 +166,14 @@ public partial class Main : Form {
         } else {
             this.ListBoxWindows.SelectedItem = null;
             this.ListBoxTabs.SelectedItem = null;
-            
+
             var we = _watchedEntities[listBox.SelectedIndex];
             if (we.IsTab) {
                 this.RbTab.Checked = true;
             } else {
                 this.RbApplication.Checked = true;
             }
+
             if (we.IsRegex) {
                 this.RbRegex.Checked = true;
             } else {
@@ -180,11 +226,6 @@ public partial class Main : Form {
             return;
 
         await _bridge!.StopAsync();
-    }
-
-    private void AddWatchedEntryListItem(WatchedEntity we) {
-        string x = $"[{(we.IsTab ? "T" : "A")}] {(we.IsRegex ? "/" : "\"")}{we.Entry}{(we.IsRegex ? "/" : "\"")}";
-        this.ListBoxEntries.Items.Add(x);
     }
 
     protected override void WndProc(ref Message m) {

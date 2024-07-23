@@ -77,4 +77,9 @@ public static class WindowsTools {
 
         return runningFullScreen;
     }
+
+    public static bool AnyTitleMatches(WatchedEntity we, IDictionary<IntPtr, string>? windows = null) {
+        windows = windows ?? GetOpenWindows();
+        return windows.Any(kvp => we.Matches(kvp.Value));
+    }
 }
