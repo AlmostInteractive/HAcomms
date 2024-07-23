@@ -98,7 +98,7 @@ public partial class Main : Form {
         this.ListBoxEntries.Items.Add(x);
     }
 
-    private void PerformScan(object sender, EventArgs e) {
+    private void PerformScan(object? sender, EventArgs e) {
         if (!_initialized || _inScan) {
             return;
         }
@@ -109,7 +109,7 @@ public partial class Main : Form {
         var windows = WindowsTools.GetOpenWindows();
 
         if (_watchedEntities.Where(we => !we.IsTab).Any(we => WindowsTools.AnyTitleMatches(we, windows))) {
-            _model.WatchedEntriesPresent = true;
+            _model!.WatchedEntriesPresent = true;
             _inScan = false;
             return;
         }
@@ -122,12 +122,12 @@ public partial class Main : Form {
         Chrome.ResetCache();
 
         if (tabs.Any(we => chromes.Any(kvp => Chrome.MatchesWatchedEntity(kvp.Key, we)))) {
-            _model.WatchedEntriesPresent = true;
+            _model!.WatchedEntriesPresent = true;
             _inScan = false;
             return;
         }
 
-        _model.WatchedEntriesPresent = false;
+        _model!.WatchedEntriesPresent = false;
         _inScan = false;
     }
 
