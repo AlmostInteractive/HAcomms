@@ -1,6 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HAcomms", "HAcomms.csproj", "{5769727C-7910-4FFB-A46F-89653A5BF198}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35027.167
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HAcomms", "HAcomms\HAcomms.csproj", "{DD3F9775-DFF2-488B-B8D7-6998BB113D20}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "HAcomms Installer", "HAcomms Installer\HAcomms Installer.vdproj", "{0F670F58-9900-457D-B2CE-440B0C13077A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +13,19 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5769727C-7910-4FFB-A46F-89653A5BF198}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5769727C-7910-4FFB-A46F-89653A5BF198}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5769727C-7910-4FFB-A46F-89653A5BF198}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5769727C-7910-4FFB-A46F-89653A5BF198}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD3F9775-DFF2-488B-B8D7-6998BB113D20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD3F9775-DFF2-488B-B8D7-6998BB113D20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD3F9775-DFF2-488B-B8D7-6998BB113D20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD3F9775-DFF2-488B-B8D7-6998BB113D20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F670F58-9900-457D-B2CE-440B0C13077A}.Debug|Any CPU.ActiveCfg = Debug
+		{0F670F58-9900-457D-B2CE-440B0C13077A}.Debug|Any CPU.Build.0 = Debug
+		{0F670F58-9900-457D-B2CE-440B0C13077A}.Release|Any CPU.ActiveCfg = Release
+		{0F670F58-9900-457D-B2CE-440B0C13077A}.Release|Any CPU.Build.0 = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6325AEB3-F4FE-40A5-9406-2F27ADE11850}
 	EndGlobalSection
 EndGlobal
