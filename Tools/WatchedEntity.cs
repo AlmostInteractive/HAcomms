@@ -14,7 +14,7 @@ public class WatchedEntity {
             return Entry == title;
         }
         
-        _regex = _regex ?? new Regex($"/{Entry}/");
+        _regex = _regex ?? new Regex($"{Entry}");
         return _regex.IsMatch(title);
     }
 }
