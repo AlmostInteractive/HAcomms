@@ -1,4 +1,5 @@
 using System.Text.Json;
+using HAcomms.BrowserTools;
 using HAcomms.Models;
 using HAcomms.Tools;
 using Microsoft.Extensions.Configuration;
@@ -127,13 +128,13 @@ public partial class Main : Form {
         this.ListBoxTabs.Items.Clear();
 
         if (firefoxes.Keys.Count > 0) {
-            foreach (var tab in Firefox.GetAllTabTitles(firefoxes.Keys)) {
+            foreach (var tab in BrowserTabs.GetAllTabTitles<FirefoxBrowser>(firefoxes.Keys)) {
                 this.ListBoxTabs.Items.Add(tab);
             }
         }
 
         if (chromes.Keys.Count > 0) {
-            foreach (var tab in Chrome.GetAllTabTitles(chromes.Keys)) {
+            foreach (var tab in BrowserTabs.GetAllTabTitles<ChromeBrowser>(chromes.Keys)) {
                 this.ListBoxTabs.Items.Add(tab);
             }
         }
@@ -162,12 +163,17 @@ public partial class Main : Form {
 
         var firefoxes = windows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
         var chromes = windows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
-        var tabs = _watchedEntities.Where(we => we.IsTab);
+        var weTabs = _watchedEntities.Where(we => we.IsTab).ToList();
 
-        // reset caches
-        Chrome.ResetCache();
+        BrowserTabs.ResetCache();
 
-        if (tabs.Any(we => chromes.Any(kvp => Chrome.MatchesWatchedEntity(kvp.Key, we)))) {
+        if (weTabs.Any(we => chromes.Any(kvp => BrowserTabs.MatchesWatchedEntity<ChromeBrowser>(kvp.Key, we)))) {
+            _model!.WatchedEntriesPresent = true;
+            _inScan = false;
+            return;
+        }
+        
+        if (weTabs.Any(we => firefoxes.Any(kvp => BrowserTabs.MatchesWatchedEntity<FirefoxBrowser>(kvp.Key, we)))) {
             _model!.WatchedEntriesPresent = true;
             _inScan = false;
             return;
