@@ -1,9 +1,9 @@
 using System.Text.Json;
-using HAcomms.BrowserTools;
-using HAcomms.Models;
 using HAcomms.Tools;
+using HAcomms.Models;
 using Microsoft.Extensions.Configuration;
 using NoeticTools.Net2HassMqtt;
+using BrowserTabs = HAcomms.Tools.BrowserTabs;
 using Timer = System.Windows.Forms.Timer;
 
 namespace HAcomms.Forms;
@@ -16,6 +16,10 @@ public partial class Main : Form {
     private readonly List<WatchedEntity> _watchedEntities = [];
     private readonly Timer _scanTimer = new();
     private bool _inScan = false;
+    private bool _refreshingTabs = false;
+    private IDictionary<IntPtr, string> _openWindows;
+    private Dictionary<IntPtr, string> _firefoxWindows;
+    private Dictionary<IntPtr, string> _chromeWindows;
 
 
     public Main() {
@@ -112,15 +116,24 @@ public partial class Main : Form {
     }
 
     private void RefreshWindows() {
+        this.BtnRefreshWindows.Enabled = false;
         var windows = WindowsTools.GetOpenWindows();
         this.ListBoxWindows.Items.Clear();
         foreach (var kvp in windows) {
             string title = kvp.Value;
             this.ListBoxWindows.Items.Add(title);
         }
+        this.BtnRefreshWindows.Enabled = true;
     }
 
-    private void RefreshTabs() {
+    private async Task RefreshTabs() {
+        if (_refreshingTabs) {
+            return;
+        }
+
+        _refreshingTabs = true;
+        this.BtnRefreshTabs.Enabled = false;
+        
         var windows = WindowsTools.GetOpenWindows();
         var firefoxes = windows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
         var chromes = windows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
@@ -138,6 +151,9 @@ public partial class Main : Form {
                 this.ListBoxTabs.Items.Add(tab);
             }
         }
+
+        this.BtnRefreshTabs.Enabled = true;
+        _refreshingTabs = false;
     }
 
     private void AddWatchedEntryListItem(WatchedEntity we) {
@@ -151,41 +167,50 @@ public partial class Main : Form {
         }
 
         _inScan = true;
+        
+        _openWindows = WindowsTools.GetOpenWindows();
+        _firefoxWindows = _openWindows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
+        _chromeWindows = _openWindows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
+        
+        ScanForWatchedEntities();
+        ScanForMeetings();
+        
+        _inScan = false;
+    }
 
+    private void ScanForWatchedEntities() {
         // search applications
-        var windows = WindowsTools.GetOpenWindows();
-
-        if (_watchedEntities.Where(we => !we.IsTab).Any(we => WindowsTools.AnyTitleMatches(we, windows))) {
+        if (_watchedEntities.Where(we => !we.IsTab).Any(we => WindowsTools.AnyTitleMatches(we, _openWindows))) {
             _model!.WatchedEntriesPresent = true;
-            _inScan = false;
             return;
         }
 
-        var firefoxes = windows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
-        var chromes = windows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
         var weTabs = _watchedEntities.Where(we => we.IsTab).ToList();
 
         BrowserTabs.ResetCache();
 
-        if (weTabs.Any(we => chromes.Any(kvp => BrowserTabs.MatchesWatchedEntity<ChromeBrowser>(kvp.Key, we)))) {
+        if (weTabs.Any(we => _chromeWindows.Any(kvp => BrowserTabs.MatchesWatchedEntity<ChromeBrowser>(kvp.Key, we)))) {
             _model!.WatchedEntriesPresent = true;
-            _inScan = false;
             return;
         }
         
-        if (weTabs.Any(we => firefoxes.Any(kvp => BrowserTabs.MatchesWatchedEntity<FirefoxBrowser>(kvp.Key, we)))) {
+        if (weTabs.Any(we => _firefoxWindows.Any(kvp => BrowserTabs.MatchesWatchedEntity<FirefoxBrowser>(kvp.Key, we)))) {
             _model!.WatchedEntriesPresent = true;
-            _inScan = false;
             return;
         }
 
         _model!.WatchedEntriesPresent = false;
-        _inScan = false;
+    }
+
+    private void ScanForMeetings() {
+        if (!BrowserTabs.CheckForMeetings(_chromeWindows.Values.ToList())) {
+            BrowserTabs.CheckForMeetings(_firefoxWindows.Values.ToList());
+        }
     }
 
     private void Main_Shown(object sender, EventArgs e) {
         RefreshWindows();
-        RefreshTabs();
+        Task.Run(RefreshTabs);
 
         if (!_settingsLoaded) {
             ShowSettingsDialog();
@@ -268,7 +293,7 @@ public partial class Main : Form {
 
     private void BtnRefreshWindows_Click(object sender, EventArgs e) { RefreshWindows(); }
 
-    private void BtnRefreshTabs_Click(object sender, EventArgs e) { RefreshTabs(); }
+    private async void BtnRefreshTabs_Click(object sender, EventArgs e) { await RefreshTabs(); }
 
     private async void Main_Closing(object sender, EventArgs e) {
         this.NotifyIcon.Visible = false;
