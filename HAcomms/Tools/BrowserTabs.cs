@@ -70,13 +70,13 @@ public static partial class BrowserTabs {
             return titles;
         }
 
-        GetTabTitles(hWnd, titles);
+        GetTabTitles<T>(hWnd, titles);
         tabTitles?.AddRange(titles);
 
         return titles;
     }
 
-    private static void GetTabTitles(IntPtr hWnd, List<string> tabTitles) {
+    private static void GetTabTitles<T>(IntPtr hWnd, List<string> tabTitles) where T : IBrowser {
         _windowParentElementCache.TryGetValue(hWnd, out var parent);
         if (parent == null) {
             var tree = TreeWalker.ControlViewWalker;
@@ -106,10 +106,7 @@ public static partial class BrowserTabs {
         }
 
         foreach (AutomationElement tab in tabs) {
-            string[] pieces = tab.Current.Name.Split(" - ");
-            pieces = pieces.Take(pieces.Length - 2).ToArray();
-            string tabName = string.Join(" - ", pieces);
-            tabTitles.Add(tabName);
+            tabTitles.Add(T.FormatTabTitle(tab.Current.Name));
         }
     }
 }
