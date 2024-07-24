@@ -3,11 +3,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Automation;
-using HAcomms.Tools;
 
-namespace HAcomms.BrowserTools;
+namespace HAcomms.Tools;
 
-public partial class BrowserTabs {
+public static partial class BrowserTabs {
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -16,23 +15,22 @@ public partial class BrowserTabs {
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
-    private static readonly Dictionary<IntPtr, List<string>> _windowTabTitlesCache = new();
     
-    public static bool CheckTabsForMeetings(List<string> tabs) {
+    [GeneratedRegex("^Meet - [a-z]{3}-[a-z]{4}-[a-z]{3}.*")]
+    private static partial Regex ActiveGoogleMeetRegex();
+    private static readonly Dictionary<IntPtr, List<string>> _windowTabTitlesCache = new();
+    private static readonly Dictionary<IntPtr, AutomationElement> _windowParentElementCache = new();
+    private static readonly Condition _findTabCondition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem);
+
+    public static bool CheckForMeetings(List<string> tabTitles) {
         var googleMeetRegex = ActiveGoogleMeetRegex();
-        foreach (string tab in tabs) {
+        foreach (string tab in tabTitles) {
             if (googleMeetRegex.IsMatch(tab))
                 return true;
         }
 
         return false;
     }
-
-    [GeneratedRegex("^Meet - [a-z]{3}-[a-z]{4}-[a-z]{3}.*")]
-    private static partial Regex ActiveGoogleMeetRegex();
-    
-    
-    
     
     public static List<string> GetAllTabTitles<T>(IEnumerable<IntPtr> hWnds) where T : IBrowser {
         var tabTitles = new List<string>();
@@ -79,24 +77,30 @@ public partial class BrowserTabs {
     }
 
     private static void GetTabTitles(IntPtr hWnd, List<string> tabTitles) {
-        var tree = TreeWalker.ControlViewWalker;
-        var rootElement = AutomationElement.FromHandle(hWnd);
-        if (rootElement == null) {
-            return;
-        }
-        
-        Condition condition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem);
-        var firstTab = rootElement.FindFirst(TreeScope.Descendants, condition);
-        if (firstTab == null) {
-            return;
+        _windowParentElementCache.TryGetValue(hWnd, out var parent);
+        if (parent == null) {
+            var tree = TreeWalker.ControlViewWalker;
+            var rootElement = AutomationElement.FromHandle(hWnd);
+            if (rootElement == null) {
+                return;
+            }
+
+            var firstTab = rootElement.FindFirst(TreeScope.Descendants, _findTabCondition);
+            if (firstTab == null) {
+                return;
+            }
+
+            parent = tree.GetParent(firstTab);
+            if (parent != null) {
+                _windowParentElementCache.Add(hWnd, parent);
+            }
         }
 
-        var parent = tree.GetParent(firstTab);
         if (parent == null) {
             return;
         }
 
-        var tabs = parent.FindAll(TreeScope.Children, condition);
+        var tabs = parent.FindAll(TreeScope.Children, _findTabCondition);
         if (tabs == null) {
             return;
         }
