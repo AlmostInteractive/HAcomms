@@ -1,36 +1,66 @@
 using System.Text.Json;
 using HAcomms.Models;
+using HAcomms.Tools;
 using Microsoft.Extensions.Configuration;
 using NoeticTools.Net2HassMqtt;
-using HAcomms.Tools;
 using Timer = System.Windows.Forms.Timer;
 
-namespace HAcomms;
+namespace HAcomms.Forms;
 
 public partial class Main : Form {
-    private bool _initialized = false;
+    private bool _settingsLoaded = false;
     private HAcommsModel? _model;
     private INet2HassMqttBridge? _bridge;
+    private MqttStatus _mqttStatus = MqttStatus.Disconnected;
     private readonly List<WatchedEntity> _watchedEntities = [];
-    private Timer _scanTimer = new();
+    private readonly Timer _scanTimer = new();
     private bool _inScan = false;
 
 
     public Main() {
         InitializeComponent();
-        LoadWatchedEntities();
-
-        _scanTimer.Interval = (int)(1.5 * 1000); // in ms
-        _scanTimer.Tick += PerformScan;
-        _scanTimer.Start();
+        SetMqttStatus(MqttStatus.Disconnected);
+        LoadSettings();
     }
 
-    public void SetMqttStatus(MqttStatus status) {
+    public async void ReloadSettings() {
+        LoadSettings();
+        if (!_settingsLoaded) {
+            return;
+        }
+
+        if (_mqttStatus != MqttStatus.Disconnected) {
+            await _bridge!.StopAsync();
+            SetMqttStatus(MqttStatus.Disconnected);
+            _scanTimer.Stop();
+        }
+
+        InitMqtt();
+    }
+
+    private void ShowSettingsDialog() {
+        using var form = new Settings();
+        form.ShowDialog(this);
+    }
+
+    private bool MqttIsConnected => _mqttStatus == MqttStatus.Connected;
+
+    private void SetMqttStatus(MqttStatus status) {
+        _mqttStatus = status;
         this.LblStatusMqtt.Text = Enum.GetName(typeof(MqttStatus), status);
-        Console.WriteLine("Update MQTT status: {0}", this.LblStatusMqtt.Text);
     }
 
-    private void LoadWatchedEntities() {
+    private void LoadSettings() {
+        _settingsLoaded = false;
+
+        string address = Properties.Settings.Default.MqttBroker_Address;
+        string username = Properties.Settings.Default.MqttBroker_Username;
+        string password = Properties.Settings.Default.MqttBroker_Password;
+
+        if (address == "" || username == "" || password == "") {
+            return;
+        }
+
         _watchedEntities.Clear();
         var entities = JsonSerializer.Deserialize<WatchedEntity[]>(Properties.Settings.Default.WatchedEntities);
         if (entities != null) {
@@ -41,6 +71,8 @@ public partial class Main : Form {
         foreach (var we in _watchedEntities) {
             AddWatchedEntryListItem(we);
         }
+
+        _settingsLoaded = true;
     }
 
     private void SaveWatchedEntities() {
@@ -50,27 +82,32 @@ public partial class Main : Form {
     }
 
     private async void InitMqtt() {
-        if (_initialized)
+        if (!_settingsLoaded) {
             return;
+        }
 
-        SetMqttStatus(MqttStatus.Disconnected);
-        var appConfig = new ConfigurationBuilder().AddUserSecrets<Main>().Build();
+        var appConfig = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>() {
+                ["MqttBroker:Address"] = Properties.Settings.Default.MqttBroker_Address,
+                ["MqttBroker:Username"] = Properties.Settings.Default.MqttBroker_Username,
+                ["MqttBroker:Password"] = Properties.Settings.Default.MqttBroker_Password,
+            })
+            .Build();
+
         _model = new HAcommsModel();
         _bridge = _model.BuildBridge(appConfig);
 
         SetMqttStatus(MqttStatus.Connecting);
-        await _bridge.StartAsync();
-        SetMqttStatus(MqttStatus.Connected);
+        bool connected = await _bridge.StartAsync();
+        if (!connected) {
+            SetMqttStatus(MqttStatus.Error);
+        } else {
+            SetMqttStatus(MqttStatus.Connected);
 
-        OnInitialization();
-    }
-
-    private void OnInitialization() {
-        if (_initialized) {
-            return;
+            _scanTimer.Interval = (int)(1.5 * 1000); // in ms
+            _scanTimer.Tick += PerformScan;
+            _scanTimer.Start();
         }
-
-        _initialized = true;
     }
 
     private void RefreshWindows() {
@@ -88,8 +125,17 @@ public partial class Main : Form {
         var chromes = windows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
 
         this.ListBoxTabs.Items.Clear();
-        foreach (var tab in Chrome.GetAllTabTitles(chromes.Keys)) {
-            this.ListBoxTabs.Items.Add(tab);
+
+        if (firefoxes.Keys.Count > 0) {
+            foreach (var tab in Firefox.GetAllTabTitles(firefoxes.Keys)) {
+                this.ListBoxTabs.Items.Add(tab);
+            }
+        }
+
+        if (chromes.Keys.Count > 0) {
+            foreach (var tab in Chrome.GetAllTabTitles(chromes.Keys)) {
+                this.ListBoxTabs.Items.Add(tab);
+            }
         }
     }
 
@@ -99,7 +145,7 @@ public partial class Main : Form {
     }
 
     private void PerformScan(object? sender, EventArgs e) {
-        if (!_initialized || _inScan) {
+        if (!MqttIsConnected || _inScan) {
             return;
         }
 
@@ -117,7 +163,7 @@ public partial class Main : Form {
         var firefoxes = windows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
         var chromes = windows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
         var tabs = _watchedEntities.Where(we => we.IsTab);
-        
+
         // reset caches
         Chrome.ResetCache();
 
@@ -132,20 +178,21 @@ public partial class Main : Form {
     }
 
     private void Main_Shown(object sender, EventArgs e) {
-        InitMqtt();
         RefreshWindows();
         RefreshTabs();
-    }
 
-    private void NotifyIcon_MouseClick(object sender, MouseEventArgs e) {
-        if (!_initialized) {
-            return;
+        if (!_settingsLoaded) {
+            ShowSettingsDialog();
+        } else {
+            InitMqtt();
         }
-
-        _model!.WatchedEntriesPresent = !_model.WatchedEntriesPresent;
     }
-
+    
     private void NotifyIcon_DoubleClick(object sender, EventArgs e) { this.Show(); }
+
+    private void MenuItemSettings_Click(object sender, EventArgs e) { ShowSettingsDialog(); }
+
+    private void MenuItemExit_Click(object sender, EventArgs e) { this.Close(); }
 
     private void ListBox_SelectedIndexChanged(object sender, EventArgs e) {
         var listBox = sender as ListBox;
@@ -223,10 +270,8 @@ public partial class Main : Form {
         this.NotifyIcon.Dispose();
         _scanTimer.Stop();
 
-        if (!_initialized)
-            return;
-
-        await _bridge!.StopAsync();
+        if (!MqttIsConnected)
+            await _bridge!.StopAsync();
     }
 
     protected override void WndProc(ref Message m) {

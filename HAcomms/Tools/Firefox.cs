@@ -5,7 +5,7 @@ using System.Windows.Automation;
 
 namespace HAcomms.Tools;
 
-internal static class Chrome {
+internal static class Firefox {
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -15,8 +15,8 @@ internal static class Chrome {
     static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
     private static Dictionary<IntPtr, List<string>> _cache = new();
-
-
+    
+    
     public static List<string> GetAllTabTitles(IEnumerable<IntPtr> hWnds) {
         var tabTitles = new List<string>();
         foreach (IntPtr hWnd in hWnds) {
@@ -25,19 +25,6 @@ internal static class Chrome {
 
         return tabTitles;
     }
-
-    public static bool MatchesWatchedEntity(IntPtr hWnd, WatchedEntity we) {
-        _cache.TryGetValue(hWnd, out var titles);
-        if (titles != null) {
-            return titles.Any(we.Matches);
-        }
-
-        titles = GetWindowTabTitles(hWnd);
-        _cache.Add(hWnd, titles);
-        return titles.Any(we.Matches);
-    }
-
-    public static void ResetCache() { _cache.Clear(); }
 
     private static List<string> GetWindowTabTitles(IntPtr hWnd, List<string>? tabTitles = null) {
         List<string> titles = [];
@@ -60,7 +47,7 @@ internal static class Chrome {
 
         return titles;
     }
-
+    
     private static void GetTabTitles(IntPtr hWnd, List<string> tabTitles) {
         var tree = TreeWalker.ControlViewWalker;
         var rootElement = AutomationElement.FromHandle(hWnd);
@@ -85,10 +72,7 @@ internal static class Chrome {
         }
 
         foreach (AutomationElement tab in tabs) {
-            string[] pieces = tab.Current.Name.Split(" - ");
-            pieces = pieces.Take(pieces.Length - 2).ToArray();
-            string tabName = string.Join(" - ", pieces);
-            tabTitles.Add(tabName);
+            tabTitles.Add(tab.Current.Name);
         }
     }
 }

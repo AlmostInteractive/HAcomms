@@ -1,3 +1,5 @@
+using HAcomms.Forms;
+
 namespace HAcomms;
 
 static class Program {
