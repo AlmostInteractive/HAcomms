@@ -9,7 +9,8 @@ namespace HAcomms.Models;
 
 public partial class HAcommsModel : ObservableObject {
     [ObservableProperty] private bool _watchedEntriesPresent;
-    [ObservableProperty] private bool _inMeeting;
+    [ObservableProperty] private bool _webcamInUse;
+    [ObservableProperty] private bool _microphoneInUse;
     public HaEvent KeyboardEvent = new(["press"]);
 
     public INet2HassMqttBridge BuildBridge(IConfigurationRoot appConfig) {
@@ -23,9 +24,14 @@ public partial class HAcommsModel : ObservableObject {
             .WithNodeId("watched_entries_present"));
 
         device.HasBinarySensor(config => config.OnModel(this)
-            .WithStatusProperty(nameof(InMeeting))
-            .WithFriendlyName("In A Meeting")
-            .WithNodeId("in_meeting"));
+            .WithStatusProperty(nameof(WebcamInUse))
+            .WithFriendlyName("Webcam In Use")
+            .WithNodeId("webcam_in_use"));
+        
+        device.HasBinarySensor(config => config.OnModel(this)
+            .WithStatusProperty(nameof(MicrophoneInUse))
+            .WithFriendlyName("Microphone In Use")
+            .WithNodeId("microphone_in_use"));
 
         device.HasButton(config => config.OnModel(this)
             .WithCommandMethod("CommandMethod")

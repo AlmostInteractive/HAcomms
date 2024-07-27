@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows.Automation;
 
 namespace HAcomms.Tools;
@@ -14,23 +13,11 @@ public static partial class BrowserTabs {
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
-
     
-    [GeneratedRegex("^Meet - [a-z]{3}-[a-z]{4}-[a-z]{3}.*")]
-    private static partial Regex ActiveGoogleMeetRegex();
     private static readonly Dictionary<IntPtr, List<string>> _windowTabTitlesCache = new();
     private static readonly Dictionary<IntPtr, AutomationElement> _windowParentElementCache = new();
     private static readonly Condition _findTabCondition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem);
-
-    public static bool CheckForMeetings(List<string> tabTitles) {
-        var googleMeetRegex = ActiveGoogleMeetRegex();
-        foreach (string tab in tabTitles) {
-            if (googleMeetRegex.IsMatch(tab))
-                return true;
-        }
-
-        return false;
-    }
+    
     
     public static List<string> GetAllTabTitles<T>(IEnumerable<IntPtr> hWnds) where T : IBrowser {
         var tabTitles = new List<string>();
