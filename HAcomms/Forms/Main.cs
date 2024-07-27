@@ -16,16 +16,22 @@ public partial class Main : Form {
     private MqttStatus _mqttStatus = MqttStatus.Disconnected;
     private readonly List<WatchedEntity> _watchedEntities = [];
     private readonly Timer _scanTimer = new();
-    private bool _inScan = false;
-    private bool _refreshingTabs = false;
+    private bool _inScan;
+    private bool _refreshingTabs;
     private IDictionary<IntPtr, string>? _openWindows;
     private Dictionary<IntPtr, string>? _firefoxWindows;
     private Dictionary<IntPtr, string>? _chromeWindows;
+    private readonly GlobalKeyboardHook _globalKeyboardHook;
 
 
     public Main() {
         _scanTimer.Interval = (int)(1.5 * 1000); // in ms
         _scanTimer.Tick += PerformScan;
+
+        _globalKeyboardHook = new GlobalKeyboardHook();
+        _globalKeyboardHook.KeyboardPressed += OnKeyPressed;
+        _globalKeyboardHook.KeyboardComboPressed += OnComboPressed;
+        _globalKeyboardHook.AddKeyCombo("test_combo", new List<Keys> { Keys.A, Keys.B });
 
         InitializeComponent();
         SetMqttStatus(MqttStatus.Disconnected);
@@ -56,9 +62,9 @@ public partial class Main : Form {
 
     private void SetMqttStatus(MqttStatus status) {
         _mqttStatus = status;
-        var del = () => { this.LblStatusMqtt.Text = Enum.GetName(typeof(MqttStatus), status); };
         // because this can happen before form has been created
         if (this.LblStatusMqtt.IsHandleCreated) {
+            var del = () => { this.LblStatusMqtt.Text = Enum.GetName(typeof(MqttStatus), status); };
             this.LblStatusMqtt.Invoke(del);
         }
     }
@@ -231,7 +237,8 @@ public partial class Main : Form {
     }
 
     private static bool IsMicrophoneInUse() {
-        using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone\NonPackaged");
+        using var key = Registry.CurrentUser.OpenSubKey(
+            @"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone\NonPackaged");
         return IsHardwareInUse(key);
     }
 
@@ -270,6 +277,30 @@ public partial class Main : Form {
         return retVal;
     }
 
+    private void OnKeyPressed(object? sender, GlobalKeyboardHookEventArgs e) {
+        if (!MqttIsConnected) {
+            return;
+        }
+
+        bool altDown = GlobalKeyboardHook.IsAltDown(e);
+
+        if (altDown || e.KeyboardState == GlobalKeyboardHook.KeyboardState.KeyDown) {
+            Keys loggedKey = e.KeyboardData.Key;
+            int loggedVkCode = e.KeyboardData.VirtualCode;
+            Console.WriteLine($"loggedKey {loggedKey} loggedVkCode {loggedVkCode} altDown {altDown}");
+        }
+        
+        // to consume the keystroke:  e.Handled = true;
+    }
+
+    private void OnComboPressed(object? sender, GlobalKeyboardKeyCombinationEventArgs e) {
+        if (!MqttIsConnected) {
+            return;
+        }
+        
+        _model!.KeyboardEvent.Fire(new Dictionary<string, string> { { "combo_id", e.ComboId } });
+    }
+
     private void Main_Shown(object sender, EventArgs e) {
         RefreshWindows();
         var t = Task.Run(RefreshTabs);
@@ -284,10 +315,7 @@ public partial class Main : Form {
         }
     }
 
-    private void NotifyIcon_DoubleClick(object sender, EventArgs e) {
-        this.Show();
-        _model!.KeyboardEvent.Fire("press", new Dictionary<string, string> { { "param1", "value1" } });
-    }
+    private void NotifyIcon_DoubleClick(object sender, EventArgs e) { this.Show(); }
 
     private void MenuItemSettings_Click(object sender, EventArgs e) { ShowSettingsDialog(); }
 
