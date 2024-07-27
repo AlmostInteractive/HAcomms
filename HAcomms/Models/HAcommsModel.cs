@@ -11,12 +11,13 @@ public partial class HAcommsModel : ObservableObject {
     [ObservableProperty] private bool _watchedEntriesPresent;
     [ObservableProperty] private bool _webcamInUse;
     [ObservableProperty] private bool _microphoneInUse;
-    public HaEvent KeyboardEvent = new(["press"]);
+    public HaEvent KeyboardEvent = new(["keyboard_combo_pressed"]);
 
     public INet2HassMqttBridge BuildBridge(IConfigurationRoot appConfig) {
-        var device = new DeviceBuilder().WithFriendlyName("HAcomms")
-            .WithId("hacomms")
-            .WithFriendlyName("HAcomms");
+        var device = new DeviceBuilder().WithId("hacomms")
+            .WithFriendlyName("HAcomms")
+            .WithManufacturer("AlmostInteractive")
+            .WithModel("HA Desktop Comms");
 
         device.HasBinarySensor(config => config.OnModel(this)
             .WithStatusProperty(nameof(WatchedEntriesPresent))
