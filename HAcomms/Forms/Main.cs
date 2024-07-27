@@ -226,43 +226,48 @@ public partial class Main : Form {
     }
 
     private static bool IsWebCamInUse() {
-        using (var key = Registry.CurrentUser.OpenSubKey(
-                   @"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\webcam\NonPackaged")) {
-            foreach (var subKeyName in key.GetSubKeyNames()) {
-                using (var subKey = key.OpenSubKey(subKeyName)) {
-                    if (subKey.GetValueNames().Contains("LastUsedTimeStop")) {
-                        var endTime = subKey.GetValue("LastUsedTimeStop") is long
-                            ? (long)subKey.GetValue("LastUsedTimeStop")
-                            : -1;
-                        if (endTime <= 0) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-
-        return false;
+        using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\webcam\NonPackaged");
+        return IsHardwareInUse(key);
     }
 
     private static bool IsMicrophoneInUse() {
-        using (var key = Registry.CurrentUser.OpenSubKey(
-                   @"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone\NonPackaged")) {
-            foreach (var subKeyName in key.GetSubKeyNames()) {
-                using (var subKey = key.OpenSubKey(subKeyName)) {
-                    if (subKey.GetValueNames().Contains("LastUsedTimeStop")) {
-                        var endTime = subKey.GetValue("LastUsedTimeStop") is long
-                            ? (long)subKey.GetValue("LastUsedTimeStop")
-                            : -1;
-                        if (endTime <= 0) {
-                            return true;
-                        }
-                    }
-                }
-            }
+        using var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone\NonPackaged");
+        return IsHardwareInUse(key);
+    }
+
+    private static bool IsHardwareInUse(RegistryKey? key) {
+        if (key == null) {
+            return false;
         }
 
-        return false;
+        long latestStartTime = 0;
+        bool retVal = false;
+
+        foreach (string subKeyName in key.GetSubKeyNames()) {
+            using var subKey = key.OpenSubKey(subKeyName);
+            if (subKey == null || !subKey.GetValueNames().Contains("LastUsedTimeStop")) {
+                continue;
+            }
+
+            // only record the state of the most recent start time
+            long startTime = subKey.GetValue("LastUsedTimeStart") is long
+                ? (long)subKey.GetValue("LastUsedTimeStart")!
+                : -1;
+
+            if (startTime <= latestStartTime) {
+                continue;
+            }
+
+            latestStartTime = startTime;
+
+            long endTime = subKey.GetValue("LastUsedTimeStop") is long
+                ? (long)subKey.GetValue("LastUsedTimeStop")!
+                : -1;
+
+            retVal = (endTime <= 0);
+        }
+
+        return retVal;
     }
 
     private void Main_Shown(object sender, EventArgs e) {
