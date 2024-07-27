@@ -2,6 +2,7 @@ using System.Text.Json;
 using HAcomms.Tools;
 using HAcomms.Models;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Win32;
 using NoeticTools.Net2HassMqtt;
 using BrowserTabs = HAcomms.Tools.BrowserTabs;
 using Timer = System.Windows.Forms.Timer;
@@ -20,12 +21,12 @@ public partial class Main : Form {
     private IDictionary<IntPtr, string>? _openWindows;
     private Dictionary<IntPtr, string>? _firefoxWindows;
     private Dictionary<IntPtr, string>? _chromeWindows;
-    
+
 
     public Main() {
         _scanTimer.Interval = (int)(1.5 * 1000); // in ms
         _scanTimer.Tick += PerformScan;
-        
+
         InitializeComponent();
         SetMqttStatus(MqttStatus.Disconnected);
         LoadSettings();
@@ -55,8 +56,11 @@ public partial class Main : Form {
 
     private void SetMqttStatus(MqttStatus status) {
         _mqttStatus = status;
-        var del = () => this.LblStatusMqtt.Text = Enum.GetName(typeof(MqttStatus), status);
-        del.Invoke();
+        var del = () => { this.LblStatusMqtt.Text = Enum.GetName(typeof(MqttStatus), status); };
+        // because this can happen before form has been created
+        if (this.LblStatusMqtt.IsHandleCreated) {
+            this.LblStatusMqtt.Invoke(del);
+        }
     }
 
     private void LoadSettings() {
@@ -118,17 +122,20 @@ public partial class Main : Form {
 
     private void RefreshWindows() {
         var del = () => { this.BtnRefreshWindows.Enabled = false; };
-        this.Invoke(del);
-        
+        this.BtnRefreshWindows.Invoke(del);
+
         var windows = WindowsTools.GetOpenWindows();
-        this.ListBoxWindows.Items.Clear();
+        del = () => { this.ListBoxWindows.Items.Clear(); };
+        this.ListBoxWindows.Invoke(del);
+
+        var addDelegate = (string tab) => this.ListBoxWindows.Items.Add(tab);
         foreach (var kvp in windows) {
             string title = kvp.Value;
-            this.ListBoxWindows.Items.Add(title);
+            this.ListBoxWindows.Invoke(addDelegate, title);
         }
 
         del = () => { this.BtnRefreshWindows.Enabled = true; };
-        this.Invoke(del);
+        this.BtnRefreshWindows.Invoke(del);
     }
 
     private void RefreshTabs() {
@@ -137,33 +144,33 @@ public partial class Main : Form {
         }
 
         _refreshingTabs = true;
-        
+
         var del = () => { this.BtnRefreshTabs.Enabled = false; };
-        this.Invoke(del);
-        
+        this.BtnRefreshTabs.Invoke(del);
+
         var windows = WindowsTools.GetOpenWindows();
         var firefoxes = windows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
         var chromes = windows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
 
         del = () => { this.ListBoxTabs.Items.Clear(); };
-        this.Invoke(del);
+        this.ListBoxTabs.Invoke(del);
 
         var addDelegate = (string tab) => this.ListBoxTabs.Items.Add(tab);
         if (firefoxes.Keys.Count > 0) {
             foreach (var tab in BrowserTabs.GetAllTabTitles<FirefoxBrowser>(firefoxes.Keys)) {
-                addDelegate.Invoke(tab);
+                this.ListBoxTabs.Invoke(addDelegate, tab);
             }
         }
 
         if (chromes.Keys.Count > 0) {
             foreach (var tab in BrowserTabs.GetAllTabTitles<ChromeBrowser>(chromes.Keys)) {
-                addDelegate.Invoke(tab);
+                this.ListBoxTabs.Invoke(addDelegate, tab);
             }
         }
 
         del = () => { this.BtnRefreshTabs.Enabled = true; };
-        this.Invoke(del);
-        
+        this.BtnRefreshTabs.Invoke(del);
+
         _refreshingTabs = false;
     }
 
@@ -184,7 +191,7 @@ public partial class Main : Form {
         _chromeWindows = _openWindows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
 
         ScanForWatchedEntities();
-        ScanForMeetings();
+        ScanForHwDevices();
 
         _inScan = false;
     }
@@ -213,10 +220,49 @@ public partial class Main : Form {
         _model!.WatchedEntriesPresent = false;
     }
 
-    private void ScanForMeetings() {
-        if (!BrowserTabs.CheckForMeetings(_chromeWindows!.Values.ToList())) {
-            BrowserTabs.CheckForMeetings(_firefoxWindows!.Values.ToList());
+    private void ScanForHwDevices() {
+        _model!.WebcamInUse = IsWebCamInUse();
+        _model!.MicrophoneInUse = IsMicrophoneInUse();
+    }
+
+    private static bool IsWebCamInUse() {
+        using (var key = Registry.CurrentUser.OpenSubKey(
+                   @"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\webcam\NonPackaged")) {
+            foreach (var subKeyName in key.GetSubKeyNames()) {
+                using (var subKey = key.OpenSubKey(subKeyName)) {
+                    if (subKey.GetValueNames().Contains("LastUsedTimeStop")) {
+                        var endTime = subKey.GetValue("LastUsedTimeStop") is long
+                            ? (long)subKey.GetValue("LastUsedTimeStop")
+                            : -1;
+                        if (endTime <= 0) {
+                            return true;
+                        }
+                    }
+                }
+            }
         }
+
+        return false;
+    }
+
+    private static bool IsMicrophoneInUse() {
+        using (var key = Registry.CurrentUser.OpenSubKey(
+                   @"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone\NonPackaged")) {
+            foreach (var subKeyName in key.GetSubKeyNames()) {
+                using (var subKey = key.OpenSubKey(subKeyName)) {
+                    if (subKey.GetValueNames().Contains("LastUsedTimeStop")) {
+                        var endTime = subKey.GetValue("LastUsedTimeStop") is long
+                            ? (long)subKey.GetValue("LastUsedTimeStop")
+                            : -1;
+                        if (endTime <= 0) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private void Main_Shown(object sender, EventArgs e) {
