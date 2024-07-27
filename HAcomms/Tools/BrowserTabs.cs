@@ -92,7 +92,7 @@ public static partial class BrowserTabs {
 
             parent = tree.GetParent(firstTab);
             if (parent != null) {
-                _windowParentElementCache.Add(hWnd, parent);
+                _windowParentElementCache.TryAdd(hWnd, parent);
             }
         }
 

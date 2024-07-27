@@ -17,12 +17,15 @@ public partial class Main : Form {
     private readonly Timer _scanTimer = new();
     private bool _inScan = false;
     private bool _refreshingTabs = false;
-    private IDictionary<IntPtr, string> _openWindows;
-    private Dictionary<IntPtr, string> _firefoxWindows;
-    private Dictionary<IntPtr, string> _chromeWindows;
-
+    private IDictionary<IntPtr, string>? _openWindows;
+    private Dictionary<IntPtr, string>? _firefoxWindows;
+    private Dictionary<IntPtr, string>? _chromeWindows;
+    
 
     public Main() {
+        _scanTimer.Interval = (int)(1.5 * 1000); // in ms
+        _scanTimer.Tick += PerformScan;
+        
         InitializeComponent();
         SetMqttStatus(MqttStatus.Disconnected);
         LoadSettings();
@@ -52,7 +55,8 @@ public partial class Main : Form {
 
     private void SetMqttStatus(MqttStatus status) {
         _mqttStatus = status;
-        this.LblStatusMqtt.Text = Enum.GetName(typeof(MqttStatus), status);
+        var del = () => this.LblStatusMqtt.Text = Enum.GetName(typeof(MqttStatus), status);
+        del.Invoke();
     }
 
     private void LoadSettings() {
@@ -108,51 +112,58 @@ public partial class Main : Form {
             SetMqttStatus(MqttStatus.Error);
         } else {
             SetMqttStatus(MqttStatus.Connected);
-
-            _scanTimer.Interval = (int)(1.5 * 1000); // in ms
-            _scanTimer.Tick += PerformScan;
             _scanTimer.Start();
         }
     }
 
     private void RefreshWindows() {
-        this.BtnRefreshWindows.Enabled = false;
+        var del = () => { this.BtnRefreshWindows.Enabled = false; };
+        this.Invoke(del);
+        
         var windows = WindowsTools.GetOpenWindows();
         this.ListBoxWindows.Items.Clear();
         foreach (var kvp in windows) {
             string title = kvp.Value;
             this.ListBoxWindows.Items.Add(title);
         }
-        this.BtnRefreshWindows.Enabled = true;
+
+        del = () => { this.BtnRefreshWindows.Enabled = true; };
+        this.Invoke(del);
     }
 
-    private async Task RefreshTabs() {
+    private void RefreshTabs() {
         if (_refreshingTabs) {
             return;
         }
 
         _refreshingTabs = true;
-        this.BtnRefreshTabs.Enabled = false;
+        
+        var del = () => { this.BtnRefreshTabs.Enabled = false; };
+        this.Invoke(del);
         
         var windows = WindowsTools.GetOpenWindows();
         var firefoxes = windows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
         var chromes = windows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
 
-        this.ListBoxTabs.Items.Clear();
+        del = () => { this.ListBoxTabs.Items.Clear(); };
+        this.Invoke(del);
 
+        var addDelegate = (string tab) => this.ListBoxTabs.Items.Add(tab);
         if (firefoxes.Keys.Count > 0) {
             foreach (var tab in BrowserTabs.GetAllTabTitles<FirefoxBrowser>(firefoxes.Keys)) {
-                this.ListBoxTabs.Items.Add(tab);
+                addDelegate.Invoke(tab);
             }
         }
 
         if (chromes.Keys.Count > 0) {
             foreach (var tab in BrowserTabs.GetAllTabTitles<ChromeBrowser>(chromes.Keys)) {
-                this.ListBoxTabs.Items.Add(tab);
+                addDelegate.Invoke(tab);
             }
         }
 
-        this.BtnRefreshTabs.Enabled = true;
+        del = () => { this.BtnRefreshTabs.Enabled = true; };
+        this.Invoke(del);
+        
         _refreshingTabs = false;
     }
 
@@ -167,14 +178,14 @@ public partial class Main : Form {
         }
 
         _inScan = true;
-        
+
         _openWindows = WindowsTools.GetOpenWindows();
         _firefoxWindows = _openWindows.Where(kvp => kvp.Value.EndsWith("Mozilla Firefox")).ToDictionary();
         _chromeWindows = _openWindows.Where(kvp => kvp.Value.EndsWith("Google Chrome")).ToDictionary();
-        
+
         ScanForWatchedEntities();
         ScanForMeetings();
-        
+
         _inScan = false;
     }
 
@@ -189,12 +200,12 @@ public partial class Main : Form {
 
         BrowserTabs.ResetCache();
 
-        if (weTabs.Any(we => _chromeWindows.Any(kvp => BrowserTabs.MatchesWatchedEntity<ChromeBrowser>(kvp.Key, we)))) {
+        if (weTabs.Any(we => _chromeWindows!.Any(kvp => BrowserTabs.MatchesWatchedEntity<ChromeBrowser>(kvp.Key, we)))) {
             _model!.WatchedEntriesPresent = true;
             return;
         }
-        
-        if (weTabs.Any(we => _firefoxWindows.Any(kvp => BrowserTabs.MatchesWatchedEntity<FirefoxBrowser>(kvp.Key, we)))) {
+
+        if (weTabs.Any(we => _firefoxWindows!.Any(kvp => BrowserTabs.MatchesWatchedEntity<FirefoxBrowser>(kvp.Key, we)))) {
             _model!.WatchedEntriesPresent = true;
             return;
         }
@@ -203,23 +214,29 @@ public partial class Main : Form {
     }
 
     private void ScanForMeetings() {
-        if (!BrowserTabs.CheckForMeetings(_chromeWindows.Values.ToList())) {
-            BrowserTabs.CheckForMeetings(_firefoxWindows.Values.ToList());
+        if (!BrowserTabs.CheckForMeetings(_chromeWindows!.Values.ToList())) {
+            BrowserTabs.CheckForMeetings(_firefoxWindows!.Values.ToList());
         }
     }
 
     private void Main_Shown(object sender, EventArgs e) {
         RefreshWindows();
-        Task.Run(RefreshTabs);
+        var t = Task.Run(RefreshTabs);
 
         if (!_settingsLoaded) {
             ShowSettingsDialog();
         } else {
-            InitMqtt();
+            t.ContinueWith((_) => {
+                var del = InitMqtt;
+                this.Invoke(del);
+            });
         }
     }
-    
-    private void NotifyIcon_DoubleClick(object sender, EventArgs e) { this.Show(); }
+
+    private void NotifyIcon_DoubleClick(object sender, EventArgs e) {
+        this.Show();
+        _model!.KeyboardEvent.Fire("press", new Dictionary<string, string> { { "param1", "value1" } });
+    }
 
     private void MenuItemSettings_Click(object sender, EventArgs e) { ShowSettingsDialog(); }
 
@@ -293,7 +310,7 @@ public partial class Main : Form {
 
     private void BtnRefreshWindows_Click(object sender, EventArgs e) { RefreshWindows(); }
 
-    private async void BtnRefreshTabs_Click(object sender, EventArgs e) { await RefreshTabs(); }
+    private void BtnRefreshTabs_Click(object sender, EventArgs e) { RefreshTabs(); }
 
     private async void Main_Closing(object sender, EventArgs e) {
         this.NotifyIcon.Visible = false;
