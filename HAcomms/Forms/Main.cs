@@ -298,7 +298,7 @@ public partial class Main : Form {
             return;
         }
         
-        _model!.KeyboardEvent.Fire(new Dictionary<string, string> { { "combo_id", e.ComboId } });
+        _model!.FireKeyboardComboEvent(("combo_id", e.ComboId));
     }
 
     private void Main_Shown(object sender, EventArgs e) {

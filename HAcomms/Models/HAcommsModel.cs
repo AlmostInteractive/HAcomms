@@ -11,7 +11,8 @@ public partial class HAcommsModel : ObservableObject {
     [ObservableProperty] private bool _watchedEntriesPresent;
     [ObservableProperty] private bool _webcamInUse;
     [ObservableProperty] private bool _microphoneInUse;
-    public HaEvent KeyboardEvent = new(["keyboard_combo_pressed"]);
+    private HaEvent _keyboardComboEvent = new(["keyboard_combo_pressed"]);
+    
 
     public INet2HassMqttBridge BuildBridge(IConfigurationRoot appConfig) {
         var device = new DeviceBuilder().WithId("hacomms")
@@ -40,7 +41,7 @@ public partial class HAcommsModel : ObservableObject {
             .WithNodeId("test_button"));
 
         device.HasEvent(config => config.OnModel(this)
-            .WithEvent(nameof(KeyboardEvent))
+            .WithEvent(nameof(_keyboardComboEvent))
             .WithFriendlyName("Test Event")
             .WithNodeId("test_event"));
 
@@ -52,4 +53,12 @@ public partial class HAcommsModel : ObservableObject {
     }
 
     public void CommandMethod(string json) { Console.WriteLine("CommandMethod: {0}", json); }
+
+    public void FireKeyboardComboEvent(IDictionary<string, string> args) {
+        _keyboardComboEvent.Fire(args);
+    }
+    
+    public void FireKeyboardComboEvent(params (string key, string value)[] args) {
+        _keyboardComboEvent.Fire(args);
+    }
 }
