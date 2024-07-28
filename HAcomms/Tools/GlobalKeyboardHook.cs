@@ -32,6 +32,7 @@ class GlobalKeyboardHook : IDisposable {
     private HookProc _hookProc;
     private readonly KeyCombination _pressedKeys;
     private readonly Dictionary<string, KeyCombination> _registeredKeyCombos;
+    private Keys? _lastPressedKey;
 
     private readonly Keys[]? _registeredKeys;
     private const int WH_KEYBOARD_LL = 13;
@@ -43,13 +44,9 @@ class GlobalKeyboardHook : IDisposable {
         SysKeyUp = 0x0105
     }
 
-    public static bool IsKeyCtrl(Keys key) {
-        return key is Keys.RControlKey or Keys.LControlKey;
-    }
-    
-    public static bool IsKeyAlt(Keys key) {
-        return key is Keys.LMenu or Keys.Alt;
-    }
+    public static bool IsKeyCtrl(Keys key) { return key is Keys.RControlKey or Keys.LControlKey; }
+
+    public static bool IsKeyAlt(Keys key) { return key is Keys.LMenu or Keys.Alt; }
 
     // EDT: Added an optional parameter (registeredKeys) that accepts keys to restict
     // the logging mechanism.
@@ -230,15 +227,15 @@ class GlobalKeyboardHook : IDisposable {
 
 
     private IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam) {
-        if (nCode < 0) {
-            return CallNextHookEx(_windowsHookHandle, nCode, wParam, lParam);
-        }
-
         bool eatKeyStroke = false;
+
+        if (nCode < 0) {
+            goto QuickExit;
+        }
 
         int wparamTyped = wParam.ToInt32();
         if (!Enum.IsDefined(typeof(KeyboardState), wparamTyped)) {
-            return CallNextHookEx(_windowsHookHandle, nCode, wParam, lParam);
+            goto QuickExit;
         }
 
         object? o = Marshal.PtrToStructure(lParam, typeof(LowLevelKeyboardInputEvent));
@@ -248,8 +245,15 @@ class GlobalKeyboardHook : IDisposable {
 
         switch (keyboardState) {
             case KeyboardState.KeyDown:
+            case KeyboardState.SysKeyDown:
+                if (key == _lastPressedKey) {
+                    goto QuickExit;
+                }
+
+                _lastPressedKey = key;
+
                 switch (key) {
-                    case Keys.Alt:
+                    case Keys.Alt or Keys.LMenu:
                         _pressedKeys.WithAlt = true;
                         break;
                     case Keys.LControlKey or Keys.RControlKey:
@@ -263,8 +267,11 @@ class GlobalKeyboardHook : IDisposable {
                 break;
 
             case KeyboardState.KeyUp:
+            case KeyboardState.SysKeyUp:
+                _lastPressedKey = null;
+
                 switch (key) {
-                    case Keys.Alt:
+                    case Keys.Alt or Keys.LMenu:
                         _pressedKeys.WithAlt = false;
                         break;
                     case Keys.LControlKey or Keys.RControlKey:
@@ -277,24 +284,8 @@ class GlobalKeyboardHook : IDisposable {
 
                 break;
 
-            case KeyboardState.SysKeyDown: {
-                if (key == Keys.LMenu) {
-                    _pressedKeys.WithAlt = true;
-                }
-
-                break;
-            }
-
-            case KeyboardState.SysKeyUp: {
-                if (key == Keys.LMenu) {
-                    _pressedKeys.WithAlt = false;
-                }
-
-                break;
-            }
-
             default:
-                return CallNextHookEx(_windowsHookHandle, nCode, wParam, lParam);
+                goto QuickExit;
         }
 
         // handle and construct keyboard event
@@ -317,12 +308,13 @@ class GlobalKeyboardHook : IDisposable {
             }
         }
 
+        QuickExit:
         return eatKeyStroke
             ? 1
             : CallNextHookEx(_windowsHookHandle, nCode, wParam, lParam);
     }
 
     public bool IsAltDown => _pressedKeys.WithAlt;
-    
+
     public bool IsCtrlDown => _pressedKeys.WithCtrl;
 }
