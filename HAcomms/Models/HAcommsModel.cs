@@ -35,15 +35,10 @@ public partial class HAcommsModel : ObservableObject {
             .WithFriendlyName("Microphone In Use")
             .WithNodeId("microphone_in_use"));
 
-        device.HasButton(config => config.OnModel(this)
-            .WithCommandMethod("CommandMethod")
-            .WithFriendlyName("Test Button")
-            .WithNodeId("test_button"));
-
         device.HasEvent(config => config.OnModel(this)
             .WithEvent(nameof(_keyboardComboEvent))
-            .WithFriendlyName("Test Event")
-            .WithNodeId("test_event"));
+            .WithFriendlyName("Keyboard Combo Event")
+            .WithNodeId("keyboard_combo_event"));
 
         var mqttOptions = HassMqttClientFactory.CreateQuickStartOptions(Properties.Resources.MqttClientId, appConfig);
         return new BridgeConfiguration()
@@ -51,8 +46,6 @@ public partial class HAcommsModel : ObservableObject {
             .HasDevice(device)
             .Build();
     }
-
-    public void CommandMethod(string json) { Console.WriteLine("CommandMethod: {0}", json); }
 
     public void FireKeyboardComboEvent(IDictionary<string, string> args) {
         _keyboardComboEvent.Fire(args);
