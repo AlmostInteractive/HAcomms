@@ -9,11 +9,11 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <UseWPF>true</UseWPF>
         <StartupObject>HAcomms.Program</StartupObject>
-        <ApplicationIcon>tray.ico</ApplicationIcon>
+        <ApplicationIcon>HAcomms.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
-      <Content Include="tray.ico" />
+      <Content Include="HAcomms.ico" />
     </ItemGroup>
 
     <ItemGroup>
@@ -52,6 +52,10 @@
         <PackageReference Include="MQTTnet" Version="4.3.6.1152" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
         <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Resources\" />
     </ItemGroup>
 
 </Project>

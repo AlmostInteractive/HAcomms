@@ -72,7 +72,7 @@ partial class Main {
         // NotifyIcon
         // 
         NotifyIcon.BalloonTipTitle = "HAcomms";
-        NotifyIcon.Icon = Properties.Resources.NotifyIcon_Icon;
+        NotifyIcon.Icon = Properties.Resources.AppIcon;
         NotifyIcon.Text = "HAcomms";
         NotifyIcon.Visible = true;
         NotifyIcon.DoubleClick += NotifyIcon_DoubleClick;
@@ -434,7 +434,7 @@ partial class Main {
         Controls.Add(ListBoxEntries);
         Controls.Add(menuMain);
         FormBorderStyle = FormBorderStyle.FixedSingle;
-        Icon = Properties.Resources.NotifyIcon_Icon;
+        Icon = Properties.Resources.AppIcon;
         MainMenuStrip = menuMain;
         MaximizeBox = false;
         Name = "Main";
