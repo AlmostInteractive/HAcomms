@@ -10,7 +10,7 @@ using Timer = System.Windows.Forms.Timer;
 namespace HAcomms.Forms;
 
 public partial class Main : Form {
-    private bool _settingsLoaded = false;
+    private bool _settingsLoaded ;
     private HAcommsModel? _model;
     private INet2HassMqttBridge? _bridge;
     private MqttStatus _mqttStatus = MqttStatus.Disconnected;
@@ -22,6 +22,8 @@ public partial class Main : Form {
     private Dictionary<IntPtr, string>? _firefoxWindows;
     private Dictionary<IntPtr, string>? _chromeWindows;
     private readonly GlobalKeyboardHook _globalKeyboardHook;
+    private bool _recordKeys;
+    private KeyCombination? _lastKeyCombo;
 
 
     public Main() {
@@ -91,12 +93,29 @@ public partial class Main : Form {
             AddWatchedEntryListItem(we);
         }
 
+        var combos = JsonSerializer.Deserialize<KeyCombination[]>(Properties.Settings.Default.KeyCombos);
+        if (combos != null) {
+            _globalKeyboardHook.SetKeyCombos(combos);
+        }
+
+        this.ListBoxCombos.Items.Clear();
+        foreach (var combo in _globalKeyboardHook.RegisteredKeyCombos) {
+            AddComboListItem(combo);
+        }
+
         _settingsLoaded = true;
     }
 
     private void SaveWatchedEntities() {
         string json = JsonSerializer.Serialize(_watchedEntities);
         Properties.Settings.Default.WatchedEntities = json;
+        Properties.Settings.Default.Save();
+    }
+
+    private void SaveKeyCombos() {
+        var combos = _globalKeyboardHook.RegisteredKeyCombos;
+        string json = JsonSerializer.Serialize(combos);
+        Properties.Settings.Default.KeyCombos = json;
         Properties.Settings.Default.Save();
     }
 
@@ -184,6 +203,10 @@ public partial class Main : Form {
         string x = $"[{(we.IsTab ? "T" : "A")}] {(we.IsRegex ? "/" : "\"")}{we.Entry}{(we.IsRegex ? "/" : "\"")}";
         this.ListBoxEntries.Items.Add(x);
     }
+
+    private void AddComboListItem(KeyCombination combo) { AddComboListItem(combo.Id, combo); }
+
+    private void AddComboListItem(string id, KeyCombination combo) { this.ListBoxCombos.Items.Add($"{id}: {combo}"); }
 
     private void PerformScan(object? sender, EventArgs e) {
         if (!MqttIsConnected || _inScan) {
@@ -278,26 +301,43 @@ public partial class Main : Form {
     }
 
     private void OnKeyPressed(object? sender, GlobalKeyboardHookEventArgs e) {
-        if (!MqttIsConnected) {
+        if (!_recordKeys) {
             return;
         }
 
-        bool altDown = GlobalKeyboardHook.IsAltDown(e);
+        // to consume the keystroke
+        e.Handled = true;
 
-        if (altDown || e.KeyboardState == GlobalKeyboardHook.KeyboardState.KeyDown) {
-            Keys loggedKey = e.KeyboardData.Key;
-            int loggedVkCode = e.KeyboardData.VirtualCode;
-            Console.WriteLine($"loggedKey {loggedKey} loggedVkCode {loggedVkCode} altDown {altDown}");
+        if (e.KeyboardState is not (GlobalKeyboardHook.KeyboardState.SysKeyDown or GlobalKeyboardHook.KeyboardState.KeyDown)) {
+            return;
         }
-        
-        // to consume the keystroke:  e.Handled = true;
+
+        // check to see if we should skip processing this
+        if (_lastKeyCombo != null) {
+            var key = e.KeyboardData.Key;
+            if (_lastKeyCombo.Equals(_globalKeyboardHook.CurrentKeyCombo)) {
+                return;
+            }
+
+            if (GlobalKeyboardHook.IsKeyAlt(key) && _lastKeyCombo.WithAlt) {
+                return;
+            }
+
+            if (GlobalKeyboardHook.IsKeyCtrl(key) && _lastKeyCombo.WithCtrl) {
+                return;
+            }
+        }
+
+        Console.WriteLine($"{e.KeyboardData.Key}");
+        _lastKeyCombo = _globalKeyboardHook.CurrentKeyCombo;
+        this.TextBoxKeyCombo.Text = _lastKeyCombo.ToString();
     }
 
     private void OnComboPressed(object? sender, GlobalKeyboardKeyCombinationEventArgs e) {
         if (!MqttIsConnected) {
             return;
         }
-        
+
         _model!.FireKeyboardComboEvent(("combo_id", e.ComboId));
     }
 
@@ -360,7 +400,7 @@ public partial class Main : Form {
         this.TextBoxEntryEditor.Text = (curItem ?? "");
     }
 
-    private void BtnAdd_Click(object sender, EventArgs e) {
+    private void BtnAddEntry_Click(object sender, EventArgs e) {
         string entry = this.TextBoxEntryEditor.Text;
         if (entry.Trim().Length == 0) {
             return;
@@ -376,7 +416,7 @@ public partial class Main : Form {
         SaveWatchedEntities();
     }
 
-    private void BtnRemove_Click(object sender, EventArgs e) {
+    private void BtnRemoveEntry_Click(object sender, EventArgs e) {
         int idx = this.ListBoxEntries.SelectedIndex;
         if (idx == -1) {
             return;
@@ -390,6 +430,49 @@ public partial class Main : Form {
     private void BtnRefreshWindows_Click(object sender, EventArgs e) { RefreshWindows(); }
 
     private void BtnRefreshTabs_Click(object sender, EventArgs e) { RefreshTabs(); }
+
+    private void TextBoxKeyCombo_GotFocus(object sender, EventArgs e) { _recordKeys = true; }
+
+    private void TextBoxKeyCombo_LostFocus(object sender, EventArgs e) { _recordKeys = false; }
+
+    private void BtnAddCombo_Click(object sender, EventArgs e) {
+        if (_lastKeyCombo == null || _lastKeyCombo.Count == 0) {
+            return;
+        }
+
+        string id = this.TextBoxComboId.Text.Trim();
+        if (string.IsNullOrEmpty(id)) {
+            this.TextBoxComboId.Focus();
+            return;
+        }
+
+        this.TextBoxComboId.Clear();
+
+        if (!_globalKeyboardHook.AddKeyCombo(id, _lastKeyCombo)) {
+            this.TextBoxComboId.Focus();
+            return;
+        }
+
+        this.TextBoxKeyCombo.Clear();
+
+        AddComboListItem(id, _lastKeyCombo);
+        _lastKeyCombo = null;
+
+        SaveKeyCombos();
+    }
+
+    private void BtnRemoveCombo_Click(object sender, EventArgs e) {
+        int idx = this.ListBoxCombos.SelectedIndex;
+        if (idx == -1) {
+            return;
+        }
+
+        string id = this.ListBoxCombos.SelectedItem!.ToString()!.Split(":")[0];
+
+        _globalKeyboardHook.RemoveKeyCombo(id);
+        this.ListBoxCombos.Items.RemoveAt(idx);
+        SaveKeyCombos();
+    }
 
     private async void Main_Closing(object sender, EventArgs e) {
         this.NotifyIcon.Visible = false;

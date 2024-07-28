@@ -42,8 +42,8 @@ partial class Main {
         ListBoxEntries = new ListBox();
         BtnRefreshWindows = new Button();
         BtnRefreshTabs = new Button();
-        BtnAdd = new Button();
-        BtnRemove = new Button();
+        BtnAddEntry = new Button();
+        BtnRemoveEntry = new Button();
         TextBoxEntryEditor = new TextBox();
         GroupLiteralRegex = new GroupBox();
         RbLiteral = new RadioButton();
@@ -55,6 +55,15 @@ partial class Main {
         toolStripMenuItemFile = new ToolStripMenuItem();
         settingsToolStripMenuItem = new ToolStripMenuItem();
         exitToolStripMenuItem = new ToolStripMenuItem();
+        label1 = new Label();
+        label2 = new Label();
+        label3 = new Label();
+        TextBoxComboId = new TextBox();
+        TextBoxKeyCombo = new TextBox();
+        BtnAddCombo = new Button();
+        label4 = new Label();
+        BtnRemoveCombo = new Button();
+        ListBoxCombos = new ListBox();
         GroupLiteralRegex.SuspendLayout();
         GroupAppTab.SuspendLayout();
         menuMain.SuspendLayout();
@@ -182,25 +191,25 @@ partial class Main {
         BtnRefreshTabs.UseVisualStyleBackColor = true;
         BtnRefreshTabs.Click += BtnRefreshTabs_Click;
         // 
-        // BtnAdd
+        // BtnAddEntry
         // 
-        BtnAdd.Location = new Point(365, 339);
-        BtnAdd.Name = "BtnAdd";
-        BtnAdd.Size = new Size(100, 25);
-        BtnAdd.TabIndex = 1;
-        BtnAdd.Text = "Add Entry";
-        BtnAdd.UseVisualStyleBackColor = true;
-        BtnAdd.Click += BtnAdd_Click;
+        BtnAddEntry.Location = new Point(366, 339);
+        BtnAddEntry.Name = "BtnAddEntry";
+        BtnAddEntry.Size = new Size(100, 25);
+        BtnAddEntry.TabIndex = 1;
+        BtnAddEntry.Text = "Add Entry";
+        BtnAddEntry.UseVisualStyleBackColor = true;
+        BtnAddEntry.Click += BtnAddEntry_Click;
         // 
-        // BtnRemove
+        // BtnRemoveEntry
         // 
-        BtnRemove.Location = new Point(695, 327);
-        BtnRemove.Name = "BtnRemove";
-        BtnRemove.Size = new Size(100, 30);
-        BtnRemove.TabIndex = 1;
-        BtnRemove.Text = "Remove Entry";
-        BtnRemove.UseVisualStyleBackColor = true;
-        BtnRemove.Click += BtnRemove_Click;
+        BtnRemoveEntry.Location = new Point(698, 330);
+        BtnRemoveEntry.Name = "BtnRemoveEntry";
+        BtnRemoveEntry.Size = new Size(100, 30);
+        BtnRemoveEntry.TabIndex = 1;
+        BtnRemoveEntry.Text = "Remove Entry";
+        BtnRemoveEntry.UseVisualStyleBackColor = true;
+        BtnRemoveEntry.Click += BtnRemoveEntry_Click;
         // 
         // TextBoxEntryEditor
         // 
@@ -290,22 +299,124 @@ partial class Main {
         // settingsToolStripMenuItem
         // 
         settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
-        settingsToolStripMenuItem.Size = new Size(180, 22);
+        settingsToolStripMenuItem.Size = new Size(116, 22);
         settingsToolStripMenuItem.Text = "&Settings";
         settingsToolStripMenuItem.Click += MenuItemSettings_Click;
         // 
         // exitToolStripMenuItem
         // 
         exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-        exitToolStripMenuItem.Size = new Size(180, 22);
+        exitToolStripMenuItem.Size = new Size(116, 22);
         exitToolStripMenuItem.Text = "E&xit";
         exitToolStripMenuItem.Click += MenuItemExit_Click;
+        // 
+        // label1
+        // 
+        label1.AccessibleDescription = "Description of the MQTT client.";
+        label1.AccessibleName = "MQTT  description";
+        label1.AccessibleRole = AccessibleRole.StaticText;
+        label1.Location = new Point(10, 497);
+        label1.Name = "label1";
+        label1.Size = new Size(100, 16);
+        label1.TabIndex = 8;
+        label1.Text = "Unique Id:";
+        // 
+        // label2
+        // 
+        label2.AccessibleDescription = "Running applications.";
+        label2.AccessibleName = "Running applicaitons";
+        label2.AccessibleRole = AccessibleRole.StaticText;
+        label2.AutoSize = true;
+        label2.Font = new Font("Microsoft Sans Serif", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        label2.Location = new Point(10, 467);
+        label2.Name = "label2";
+        label2.Size = new Size(225, 24);
+        label2.TabIndex = 9;
+        label2.Text = "Keyboard Combo Events:";
+        // 
+        // label3
+        // 
+        label3.AccessibleDescription = "Description of the MQTT client.";
+        label3.AccessibleName = "MQTT  description";
+        label3.AccessibleRole = AccessibleRole.StaticText;
+        label3.Location = new Point(10, 524);
+        label3.Name = "label3";
+        label3.Size = new Size(100, 16);
+        label3.TabIndex = 10;
+        label3.Text = "Key Combo:";
+        // 
+        // TextBoxComboId
+        // 
+        TextBoxComboId.Location = new Point(87, 494);
+        TextBoxComboId.Name = "TextBoxComboId";
+        TextBoxComboId.Size = new Size(213, 23);
+        TextBoxComboId.TabIndex = 11;
+        // 
+        // TextBoxKeyCombo
+        // 
+        TextBoxKeyCombo.Location = new Point(87, 521);
+        TextBoxKeyCombo.Name = "TextBoxKeyCombo";
+        TextBoxKeyCombo.Size = new Size(213, 23);
+        TextBoxKeyCombo.TabIndex = 12;
+        TextBoxKeyCombo.GotFocus += TextBoxKeyCombo_GotFocus;
+        TextBoxKeyCombo.LostFocus += TextBoxKeyCombo_LostFocus;
+        // 
+        // BtnAddCombo
+        // 
+        BtnAddCombo.Location = new Point(306, 520);
+        BtnAddCombo.Name = "BtnAddCombo";
+        BtnAddCombo.Size = new Size(100, 25);
+        BtnAddCombo.TabIndex = 13;
+        BtnAddCombo.Text = "Add Combo";
+        BtnAddCombo.UseVisualStyleBackColor = true;
+        BtnAddCombo.Click += BtnAddCombo_Click;
+        // 
+        // label4
+        // 
+        label4.AccessibleDescription = "Watched apps and tabs.";
+        label4.AccessibleName = "Watched apps and tabs";
+        label4.AccessibleRole = AccessibleRole.StaticText;
+        label4.AutoSize = true;
+        label4.Font = new Font("Microsoft Sans Serif", 14F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        label4.Location = new Point(442, 467);
+        label4.Name = "label4";
+        label4.Size = new Size(86, 24);
+        label4.TabIndex = 16;
+        label4.Text = "Combos:";
+        // 
+        // BtnRemoveCombo
+        // 
+        BtnRemoveCombo.Location = new Point(687, 639);
+        BtnRemoveCombo.Name = "BtnRemoveCombo";
+        BtnRemoveCombo.Size = new Size(111, 30);
+        BtnRemoveCombo.TabIndex = 15;
+        BtnRemoveCombo.Text = "Remove Combo";
+        BtnRemoveCombo.UseVisualStyleBackColor = true;
+        BtnRemoveCombo.Click += BtnRemoveCombo_Click;
+        // 
+        // ListBoxCombos
+        // 
+        ListBoxCombos.FormattingEnabled = true;
+        ListBoxCombos.ItemHeight = 15;
+        ListBoxCombos.Location = new Point(442, 494);
+        ListBoxCombos.Name = "ListBoxCombos";
+        ListBoxCombos.Size = new Size(356, 139);
+        ListBoxCombos.TabIndex = 14;
         // 
         // Main
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(808, 454);
+        ClientSize = new Size(808, 678);
+        Controls.Add(label4);
+        Controls.Add(BtnRemoveCombo);
+        Controls.Add(ListBoxCombos);
+        Controls.Add(BtnAddCombo);
+        Controls.Add(TextBoxKeyCombo);
+        Controls.Add(TextBoxComboId);
+        Controls.Add(label3);
+        Controls.Add(label1);
+        Controls.Add(label2);
         Controls.Add(GroupLiteralRegex);
         Controls.Add(GroupAppTab);
         Controls.Add(LblStatusMqtt);
@@ -316,8 +427,8 @@ partial class Main {
         Controls.Add(BtnRefreshWindows);
         Controls.Add(BtnRefreshTabs);
         Controls.Add(TextBoxEntryEditor);
-        Controls.Add(BtnAdd);
-        Controls.Add(BtnRemove);
+        Controls.Add(BtnAddEntry);
+        Controls.Add(BtnRemoveEntry);
         Controls.Add(ListBoxWindows);
         Controls.Add(ListBoxTabs);
         Controls.Add(ListBoxEntries);
@@ -350,8 +461,8 @@ partial class Main {
     private System.Windows.Forms.ListBox ListBoxWindows;
     private System.Windows.Forms.ListBox ListBoxTabs;
     private System.Windows.Forms.ListBox ListBoxEntries;
-    private System.Windows.Forms.Button BtnAdd;
-    private System.Windows.Forms.Button BtnRemove;
+    private System.Windows.Forms.Button BtnAddEntry;
+    private System.Windows.Forms.Button BtnRemoveEntry;
     private System.Windows.Forms.TextBox TextBoxEntryEditor;
     private System.Windows.Forms.GroupBox GroupLiteralRegex;
     private System.Windows.Forms.RadioButton RbRegex;
@@ -363,4 +474,13 @@ partial class Main {
     private ToolStripMenuItem toolStripMenuItemFile;
     private ToolStripMenuItem settingsToolStripMenuItem;
     private ToolStripMenuItem exitToolStripMenuItem;
+    private Label label1;
+    private Label label2;
+    private Label label3;
+    private TextBox TextBoxComboId;
+    private TextBox TextBoxKeyCombo;
+    private Button BtnAddCombo;
+    private Label label4;
+    private Button BtnRemoveCombo;
+    private ListBox ListBoxCombos;
 }

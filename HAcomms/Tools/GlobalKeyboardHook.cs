@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 
@@ -35,8 +34,6 @@ class GlobalKeyboardHook : IDisposable {
     private readonly Dictionary<string, KeyCombination> _registeredKeyCombos;
 
     private readonly Keys[]? _registeredKeys;
-    private const int KF_ALTDOWN = 0x2000;
-    private const int LLKHF_ALTDOWN = (KF_ALTDOWN >> 8);
     private const int WH_KEYBOARD_LL = 13;
 
     public enum KeyboardState {
@@ -44,6 +41,14 @@ class GlobalKeyboardHook : IDisposable {
         KeyUp = 0x0101,
         SysKeyDown = 0x0104,
         SysKeyUp = 0x0105
+    }
+
+    public static bool IsKeyCtrl(Keys key) {
+        return key is Keys.RControlKey or Keys.LControlKey;
+    }
+    
+    public static bool IsKeyAlt(Keys key) {
+        return key is Keys.LMenu or Keys.Alt;
     }
 
     // EDT: Added an optional parameter (registeredKeys) that accepts keys to restict
@@ -75,6 +80,10 @@ class GlobalKeyboardHook : IDisposable {
         }
     }
 
+    public KeyCombination CurrentKeyCombo => _pressedKeys.Clone();
+
+    public KeyCombination[] RegisteredKeyCombos => _registeredKeyCombos.Values.ToArray();
+
     public bool AddKeyCombo(string id, IEnumerable<Keys> keys, bool withAlt = false, bool withCtrl = false) {
         if (_registeredKeyCombos.ContainsKey(id)) {
             return false;
@@ -85,13 +94,22 @@ class GlobalKeyboardHook : IDisposable {
         return true;
     }
 
+    public bool AddKeyCombo(string id, KeyCombination keyCombo) { return AddKeyCombo(id, keyCombo.Keys, keyCombo.WithAlt, keyCombo.WithCtrl); }
+
     public bool RemoveKeyCombo(string id) {
-        if (_registeredKeyCombos.ContainsKey(id)) {
+        if (!_registeredKeyCombos.ContainsKey(id)) {
             return false;
         }
 
         _registeredKeyCombos.Remove(id);
         return true;
+    }
+
+    public void SetKeyCombos(IEnumerable<KeyCombination> combos) {
+        _registeredKeyCombos.Clear();
+        foreach (var combo in combos) {
+            _registeredKeyCombos.TryAdd(combo.Id, combo);
+        }
     }
 
     protected virtual void Dispose(bool disposing) {
@@ -185,7 +203,7 @@ class GlobalKeyboardHook : IDisposable {
         /// <summary>
         /// The VirtualCode converted to typeof(Keys) for higher usability.
         /// </summary>
-        public Keys Key { get { return (Keys)VirtualCode; } }
+        public Keys Key => (Keys)VirtualCode;
 
         /// <summary>
         /// A hardware scan code for the key. 
@@ -212,157 +230,99 @@ class GlobalKeyboardHook : IDisposable {
 
 
     private IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam) {
-        if (nCode < 0)
+        if (nCode < 0) {
             return CallNextHookEx(_windowsHookHandle, nCode, wParam, lParam);
+        }
 
-        bool fEatKeyStroke = false;
+        bool eatKeyStroke = false;
 
         int wparamTyped = wParam.ToInt32();
-        if (Enum.IsDefined(typeof(KeyboardState), wparamTyped)) {
-            object? o = Marshal.PtrToStructure(lParam, typeof(LowLevelKeyboardInputEvent));
-            var keyboardData = (LowLevelKeyboardInputEvent)o!;
-            var keyboardState = (KeyboardState)wparamTyped;
-            var key = keyboardData.Key;
-            int keyCode = keyboardData.VirtualCode;
+        if (!Enum.IsDefined(typeof(KeyboardState), wparamTyped)) {
+            return CallNextHookEx(_windowsHookHandle, nCode, wParam, lParam);
+        }
 
-            switch (keyboardState) {
-                case KeyboardState.KeyDown:
-                    switch (keyCode) {
-                        case 164:
-                            _pressedKeys.WithAlt = true;
-                            break;
-                        case 162 or 163:
-                            _pressedKeys.WithCtrl = true;
-                            break;
-                        default:
-                            _pressedKeys.Add(key);
-                            break;
-                    }
+        object? o = Marshal.PtrToStructure(lParam, typeof(LowLevelKeyboardInputEvent));
+        var keyboardData = (LowLevelKeyboardInputEvent)o!;
+        var keyboardState = (KeyboardState)wparamTyped;
+        var key = keyboardData.Key;
 
-                    break;
-
-                case KeyboardState.KeyUp:
-                    switch (keyCode) {
-                        case 164:
-                            _pressedKeys.WithAlt = false;
-                            break;
-                        case 162 or 163:
-                            _pressedKeys.WithCtrl = false;
-                            break;
-                        default:
-                            _pressedKeys.Remove(key);
-                            break;
-                    }
-
-                    break;
-
-                case KeyboardState.SysKeyDown: {
-                    if (keyCode == 165) {
+        switch (keyboardState) {
+            case KeyboardState.KeyDown:
+                switch (key) {
+                    case Keys.Alt:
                         _pressedKeys.WithAlt = true;
-                    }
-
-                    break;
+                        break;
+                    case Keys.LControlKey or Keys.RControlKey:
+                        _pressedKeys.WithCtrl = true;
+                        break;
+                    default:
+                        _pressedKeys.Add(key);
+                        break;
                 }
 
-                case KeyboardState.SysKeyUp: {
-                    if (keyCode == 165) {
+                break;
+
+            case KeyboardState.KeyUp:
+                switch (key) {
+                    case Keys.Alt:
                         _pressedKeys.WithAlt = false;
-                    }
-
-                    break;
+                        break;
+                    case Keys.LControlKey or Keys.RControlKey:
+                        _pressedKeys.WithCtrl = false;
+                        break;
+                    default:
+                        _pressedKeys.Remove(key);
+                        break;
                 }
 
-                default:
-                    return CallNextHookEx(_windowsHookHandle, nCode, wParam, lParam);
+                break;
+
+            case KeyboardState.SysKeyDown: {
+                if (key == Keys.LMenu) {
+                    _pressedKeys.WithAlt = true;
+                }
+
+                break;
             }
 
-            // handle and construct keyboard event
-            var keyboardPressedEventArgs = new GlobalKeyboardHookEventArgs(keyboardData, keyboardState);
-            if (_registeredKeys == null || _registeredKeys.Contains(key)) {
-                var handler = KeyboardPressed;
-                handler?.Invoke(this, keyboardPressedEventArgs);
-                fEatKeyStroke = keyboardPressedEventArgs.Handled;
+            case KeyboardState.SysKeyUp: {
+                if (key == Keys.LMenu) {
+                    _pressedKeys.WithAlt = false;
+                }
+
+                break;
             }
 
-            // handle and construct keyboard combo event
+            default:
+                return CallNextHookEx(_windowsHookHandle, nCode, wParam, lParam);
+        }
+
+        // handle and construct keyboard event
+        var keyboardPressedEventArgs = new GlobalKeyboardHookEventArgs(keyboardData, keyboardState);
+        if (_registeredKeys == null || _registeredKeys.Contains(key)) {
+            var handler = KeyboardPressed;
+            handler?.Invoke(this, keyboardPressedEventArgs);
+            eatKeyStroke = keyboardPressedEventArgs.Handled;
+        }
+
+        // handle and construct keyboard combo event
+        if (!eatKeyStroke) {
             foreach (var kvp in _registeredKeyCombos) {
                 if (kvp.Value.Equals(_pressedKeys)) {
                     var keyboardComboEventArgs = new GlobalKeyboardKeyCombinationEventArgs(kvp.Key);
                     var handler = KeyboardComboPressed;
                     handler?.Invoke(this, keyboardComboEventArgs);
-                    fEatKeyStroke = keyboardComboEventArgs.Handled;
-                    break;
+                    eatKeyStroke |= keyboardComboEventArgs.Handled;
                 }
             }
         }
 
-        return fEatKeyStroke
+        return eatKeyStroke
             ? 1
             : CallNextHookEx(_windowsHookHandle, nCode, wParam, lParam);
     }
 
-    public static bool IsAltDown(GlobalKeyboardHookEventArgs e) { return e.KeyboardData.Flags == GlobalKeyboardHook.LLKHF_ALTDOWN; }
-
-    private class KeyCombination : IEquatable<KeyCombination> {
-        private readonly HashSet<Keys> _keys;
-
-
-        public KeyCombination(string id, IEnumerable<Keys> keys, bool withAlt = false, bool withCtrl = false) {
-            Id = id;
-            _keys = keys.ToHashSet();
-            WithAlt = withAlt;
-            WithCtrl = withCtrl;
-        }
-
-        public void Add(Keys key) { _keys.Add(key); }
-
-        public void Remove(Keys key) { _keys.Remove(key); }
-
-        public void Clear() { _keys.Clear(); }
-
-        public string Id { get; internal set; }
-
-        public bool WithAlt { get; set; }
-
-        public bool WithCtrl { get; set; }
-
-        public int Count => _keys.Count;
-
-        public bool Equals(KeyCombination? other) { return other != null && WithAlt == other.WithAlt && WithCtrl == other.WithCtrl && KeysEqual(other._keys); }
-
-        public override bool Equals(object? obj) {
-            if (obj is KeyCombination combination)
-                return Equals(combination);
-            return false;
-        }
-
-        private bool KeysEqual(IReadOnlySet<Keys> keys) { return keys.SetEquals(_keys); }
-
-        public override int GetHashCode() {
-            //http://stackoverflow.com/a/263416
-            //http://stackoverflow.com/a/8094931
-            //assume keys not going to modify after we use GetHashCode
-            unchecked {
-                int hash = 19;
-                foreach (var key in _keys) {
-                    hash = hash * 31 + key.GetHashCode();
-                }
-
-                return hash;
-            }
-        }
-
-        public override string ToString() {
-            var sb = new StringBuilder((_keys.Count - 1) * 4 + 10);
-            bool first = true;
-            foreach (var key in _keys) {
-                sb.Append((first
-                    ? ""
-                    : " + ") + key);
-                first = false;
-            }
-
-            return sb.ToString();
-        }
-    }
+    public bool IsAltDown => _pressedKeys.WithAlt;
+    
+    public bool IsCtrlDown => _pressedKeys.WithCtrl;
 }
