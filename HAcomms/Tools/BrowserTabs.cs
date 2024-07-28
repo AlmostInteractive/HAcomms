@@ -5,7 +5,8 @@ using System.Windows.Automation;
 
 namespace HAcomms.Tools;
 
-public static partial class BrowserTabs {
+public static class BrowserTabs {
+    #region extern
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -13,6 +14,7 @@ public static partial class BrowserTabs {
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+    #endregion
     
     private static readonly Dictionary<IntPtr, List<string>> _windowTabTitlesCache = new();
     private static readonly Dictionary<IntPtr, AutomationElement> _windowParentElementCache = new();
