@@ -10,6 +10,7 @@ using Timer = System.Windows.Forms.Timer;
 namespace HAcomms.Forms;
 
 public partial class Main : Form {
+    private bool _startMinimized;
     private bool _settingsLoaded ;
     private HAcommsModel? _model;
     private INet2HassMqttBridge? _bridge;
@@ -26,7 +27,8 @@ public partial class Main : Form {
     private KeyCombination? _lastKeyCombo;
 
 
-    public Main() {
+    public Main(bool minimized) {
+        _startMinimized = minimized;
         _scanTimer.Interval = (int)(1.5 * 1000); // in ms
         _scanTimer.Tick += PerformScan;
 
@@ -342,6 +344,11 @@ public partial class Main : Form {
     }
 
     private void Main_Shown(object sender, EventArgs e) {
+        if (_startMinimized) {
+            _startMinimized = false;
+            this.Hide();
+        }
+        
         RefreshWindows();
         var t = Task.Run(RefreshTabs);
 
