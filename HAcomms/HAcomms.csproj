@@ -34,12 +34,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Reference Include="NoeticTools.Net2HassMqtt">
-        <HintPath>..\..\Net2HassMqtt\Net2HassMqtt\bin\Release\net8.0\NoeticTools.Net2HassMqtt.dll</HintPath>
-      </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
       <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
       <PackageReference Include="FluentDateTime" Version="3.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0-preview.6.24327.7" />
@@ -50,6 +44,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
         <PackageReference Include="MQTTnet" Version="4.3.6.1152" />
+        <PackageReference Include="NoeticTools.Net2HassMqtt" Version="0.3.1-alpha.1" />
         <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
         <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
     </ItemGroup>

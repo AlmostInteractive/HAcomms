@@ -32,6 +32,9 @@ partial class Main {
         components = new System.ComponentModel.Container();
         System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
         NotifyIcon = new NotifyIcon(components);
+        contextMenu = new ContextMenuStrip(components);
+        showToolStripMenuItem = new ToolStripMenuItem();
+        exitToolStripMenuItem1 = new ToolStripMenuItem();
         LblStatusMqtt = new Label();
         LblMqtt = new Label();
         LblOpenWindows = new Label();
@@ -64,6 +67,7 @@ partial class Main {
         label4 = new Label();
         BtnRemoveCombo = new Button();
         ListBoxCombos = new ListBox();
+        contextMenu.SuspendLayout();
         GroupLiteralRegex.SuspendLayout();
         GroupAppTab.SuspendLayout();
         menuMain.SuspendLayout();
@@ -72,10 +76,32 @@ partial class Main {
         // NotifyIcon
         // 
         NotifyIcon.BalloonTipTitle = "HAcomms";
+        NotifyIcon.ContextMenuStrip = contextMenu;
         NotifyIcon.Icon = Properties.Resources.AppIcon;
         NotifyIcon.Text = "HAcomms";
         NotifyIcon.Visible = true;
         NotifyIcon.DoubleClick += NotifyIcon_DoubleClick;
+        NotifyIcon.ContextMenuStrip = contextMenu;
+        // 
+        // contextMenu
+        // 
+        contextMenu.Items.AddRange(new ToolStripItem[] { showToolStripMenuItem, exitToolStripMenuItem1 });
+        contextMenu.Name = "contextMenu";
+        contextMenu.Size = new Size(181, 70);
+        // 
+        // showToolStripMenuItem
+        // 
+        showToolStripMenuItem.Name = "showToolStripMenuItem";
+        showToolStripMenuItem.Size = new Size(180, 22);
+        showToolStripMenuItem.Text = "&Show";
+        showToolStripMenuItem.Click += showToolStripMenuItem_Click;
+        // 
+        // exitToolStripMenuItem1
+        // 
+        exitToolStripMenuItem1.Name = "exitToolStripMenuItem1";
+        exitToolStripMenuItem1.Size = new Size(180, 22);
+        exitToolStripMenuItem1.Text = "E&xit";
+        exitToolStripMenuItem1.Click += exitToolStripMenuItem1_Click;
         // 
         // LblStatusMqtt
         // 
@@ -441,6 +467,7 @@ partial class Main {
         Text = "HAcomms";
         Closing += Main_Closing;
         Shown += Main_Shown;
+        contextMenu.ResumeLayout(false);
         GroupLiteralRegex.ResumeLayout(false);
         GroupAppTab.ResumeLayout(false);
         menuMain.ResumeLayout(false);
@@ -483,4 +510,7 @@ partial class Main {
     private Label label4;
     private Button BtnRemoveCombo;
     private ListBox ListBoxCombos;
+    private ContextMenuStrip contextMenu;
+    private ToolStripMenuItem showToolStripMenuItem;
+    private ToolStripMenuItem exitToolStripMenuItem1;
 }

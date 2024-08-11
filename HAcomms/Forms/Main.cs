@@ -11,7 +11,7 @@ namespace HAcomms.Forms;
 
 public partial class Main : Form {
     private bool _startMinimized;
-    private bool _settingsLoaded ;
+    private bool _settingsLoaded;
     private HAcommsModel? _model;
     private INet2HassMqttBridge? _bridge;
     private MqttStatus _mqttStatus = MqttStatus.Disconnected;
@@ -40,6 +40,11 @@ public partial class Main : Form {
         InitializeComponent();
         SetMqttStatus(MqttStatus.Disconnected);
         LoadSettings();
+    }
+
+    public void ShowMainForm() {
+        this.Show();
+        this.WindowState = FormWindowState.Normal;
     }
 
     public async void ReloadSettings() {
@@ -348,7 +353,7 @@ public partial class Main : Form {
             _startMinimized = false;
             this.Hide();
         }
-        
+
         RefreshWindows();
         var t = Task.Run(RefreshTabs);
 
@@ -362,7 +367,7 @@ public partial class Main : Form {
         }
     }
 
-    private void NotifyIcon_DoubleClick(object sender, EventArgs e) { this.Show(); }
+    private void NotifyIcon_DoubleClick(object sender, EventArgs e) { ShowMainForm(); }
 
     private void MenuItemSettings_Click(object sender, EventArgs e) { ShowSettingsDialog(); }
 
@@ -490,6 +495,10 @@ public partial class Main : Form {
         if (!MqttIsConnected)
             await _bridge!.StopAsync();
     }
+
+    private void showToolStripMenuItem_Click(object sender, EventArgs e) { ShowMainForm(); }
+
+    private void exitToolStripMenuItem1_Click(object sender, EventArgs e) { this.Close(); }
 
     protected override void WndProc(ref Message m) {
         if (m.Msg == 0x0112) // WM_SYSCOMMAND
