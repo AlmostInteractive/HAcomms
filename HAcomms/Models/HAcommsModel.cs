@@ -11,6 +11,7 @@ public partial class HAcommsModel : ObservableObject {
     [ObservableProperty] private bool _watchedEntriesPresent;
     [ObservableProperty] private bool _webcamInUse;
     [ObservableProperty] private bool _microphoneInUse;
+    [ObservableProperty] private bool _mute;
     public event EventHandler<HassEventArgs>? KeyboardComboEvent;
     
 
@@ -33,7 +34,12 @@ public partial class HAcommsModel : ObservableObject {
         device.HasBinarySensor(config => config.OnModel(this)
             .WithStatusProperty(nameof(MicrophoneInUse))
             .WithFriendlyName("Microphone In Use")
-            .WithNodeId("microphone_in_use"));
+            .WithNodeId("microphone_in_use"));       
+        
+        device.HasBinarySensor(config => config.OnModel(this)
+            .WithStatusProperty(nameof(Mute))
+            .WithFriendlyName("Mute")
+            .WithNodeId("mute"));
 
         device.HasEvent(config => config.OnModel(this)
             .WithEvent(nameof(KeyboardComboEvent))

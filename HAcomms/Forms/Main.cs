@@ -3,6 +3,7 @@ using HAcomms.Tools;
 using HAcomms.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Win32;
+using NAudio.CoreAudioApi;
 using NoeticTools.Net2HassMqtt;
 using BrowserTabs = HAcomms.Tools.BrowserTabs;
 using Timer = System.Windows.Forms.Timer;
@@ -10,6 +11,9 @@ using Timer = System.Windows.Forms.Timer;
 namespace HAcomms.Forms;
 
 public partial class Main : Form {
+    private const int WM_SYSCOMMAND = 0x112;
+    private const IntPtr SC_MINIMIZE = 0XF020;
+    
     private bool _startMinimized;
     private bool _settingsLoaded;
     private HAcommsModel? _model;
@@ -25,7 +29,7 @@ public partial class Main : Form {
     private readonly GlobalKeyboardHook _globalKeyboardHook;
     private bool _recordKeys;
     private KeyCombination? _lastKeyCombo;
-
+    private readonly Audio _audio;
 
     public Main(bool minimized) {
         _startMinimized = minimized;
@@ -35,14 +39,16 @@ public partial class Main : Form {
         _globalKeyboardHook = new GlobalKeyboardHook();
         _globalKeyboardHook.KeyboardPressed += OnKeyPressed;
         _globalKeyboardHook.KeyboardComboPressed += OnComboPressed;
-        _globalKeyboardHook.AddKeyCombo("test_combo", new List<Keys> { Keys.A, Keys.B });
+
+        _audio = new Audio();
+        _audio.HookVolumeNotification(OnVolumeChanged);
 
         InitializeComponent();
         SetMqttStatus(MqttStatus.Disconnected);
         LoadSettings();
     }
 
-    public void ShowMainForm() {
+    private void ShowMainForm() {
         this.Show();
         this.WindowState = FormWindowState.Normal;
     }
@@ -148,7 +154,7 @@ public partial class Main : Form {
             SetMqttStatus(MqttStatus.Error);
         } else {
             SetMqttStatus(MqttStatus.Connected);
-            _scanTimer.Start();
+            StartScans();
         }
     }
 
@@ -214,6 +220,11 @@ public partial class Main : Form {
     private void AddComboListItem(KeyCombination combo) { AddComboListItem(combo.Id, combo); }
 
     private void AddComboListItem(string id, KeyCombination combo) { this.ListBoxCombos.Items.Add($"{id}: {combo}"); }
+
+    private void StartScans() {
+        _scanTimer.Start();
+        _model!.Mute = _audio.IsMuted;
+    }
 
     private void PerformScan(object? sender, EventArgs e) {
         if (!MqttIsConnected || _inScan) {
@@ -346,6 +357,10 @@ public partial class Main : Form {
         }
 
         _model!.FireKeyboardComboEvent(("combo_id", e.ComboId));
+    }
+
+    private void OnVolumeChanged(AudioVolumeNotificationData data) {
+        _model!.Mute = _audio.IsMuted;
     }
 
     private void Main_Shown(object sender, EventArgs e) {
@@ -501,15 +516,10 @@ public partial class Main : Form {
     private void exitToolStripMenuItem1_Click(object sender, EventArgs e) { this.Close(); }
 
     protected override void WndProc(ref Message m) {
-        if (m.Msg == 0x0112) // WM_SYSCOMMAND
-        {
-            // Check your window state here
-            if (m.WParam == new IntPtr(0XF020)) // Minimize event - SC_MINIMIZE from Winuser.h
-            {
-                // The window is being minimized
-                this.Hide();
-                return;
-            }
+        if (m.Msg == WM_SYSCOMMAND && m.WParam == SC_MINIMIZE) {
+            // The window is being minimized
+            this.Hide();
+            return;
         }
 
         base.WndProc(ref m);
