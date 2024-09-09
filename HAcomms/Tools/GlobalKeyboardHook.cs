@@ -81,17 +81,19 @@ class GlobalKeyboardHook : IDisposable {
 
     public KeyCombination[] RegisteredKeyCombos => _registeredKeyCombos.Values.ToArray();
 
-    public void AddKeyCombo(string id, IEnumerable<Keys> keys, bool withAlt = false, bool withCtrl = false) {
+    public bool AddKeyCombo(string id, IEnumerable<Keys> keys, bool withAlt = false, bool withCtrl = false) {
+        bool newEntry = true;
         if (_registeredKeyCombos.ContainsKey(id)) {
             _registeredKeyCombos.Remove(id);
+            newEntry = false;
         }
 
         var combo = new KeyCombination(id, keys, withAlt, withCtrl);
         _registeredKeyCombos.Add(id, combo);
-        return;
+        return newEntry;
     }
 
-    public void AddKeyCombo(string id, KeyCombination keyCombo) { AddKeyCombo(id, keyCombo.Keys, keyCombo.WithAlt, keyCombo.WithCtrl); }
+    public bool AddKeyCombo(string id, KeyCombination keyCombo) { return AddKeyCombo(id, keyCombo.Keys, keyCombo.WithAlt, keyCombo.WithCtrl); }
 
     public bool RemoveKeyCombo(string id) {
         if (!_registeredKeyCombos.ContainsKey(id)) {
