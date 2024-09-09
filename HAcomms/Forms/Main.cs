@@ -456,13 +456,25 @@ public partial class Main : Form {
 
     private void BtnRefreshTabs_Click(object sender, EventArgs e) { RefreshTabs(); }
 
+    private void ListBoxCombos_DoubleClick(object sender, EventArgs e) {
+        if (this.ListBoxCombos.SelectedItem == null) {
+            return;
+        }
+        string[] parts = this.ListBoxCombos.SelectedItem.ToString()!.Split(": ");
+        string id = parts[0];
+        string combo = parts[1];
+        
+        this.TextBoxComboId.Text = id;
+        this.TextBoxKeyCombo.Text = combo;
+    }
+
     private void TextBoxKeyCombo_GotFocus(object sender, EventArgs e) { _recordKeys = true; }
 
     private void TextBoxKeyCombo_LostFocus(object sender, EventArgs e) { _recordKeys = false; }
 
     private void BtnAddCombo_Click(object sender, EventArgs e) {
         if (_lastKeyCombo == null || _lastKeyCombo.Count == 0) {
-            this.TextBoxEntryEditor.Focus();
+            this.TextBoxKeyCombo.Focus();
             return;
         }
 

@@ -427,6 +427,7 @@ partial class Main {
         ListBoxCombos.Name = "ListBoxCombos";
         ListBoxCombos.Size = new Size(356, 139);
         ListBoxCombos.TabIndex = 14;
+        ListBoxCombos.DoubleClick += ListBoxCombos_DoubleClick;
         // 
         // Main
         // 
