@@ -462,6 +462,7 @@ public partial class Main : Form {
 
     private void BtnAddCombo_Click(object sender, EventArgs e) {
         if (_lastKeyCombo == null || _lastKeyCombo.Count == 0) {
+            this.TextBoxEntryEditor.Focus();
             return;
         }
 
@@ -471,10 +472,20 @@ public partial class Main : Form {
             return;
         }
 
-        _globalKeyboardHook.AddKeyCombo(id, _lastKeyCombo);
+        bool isNewEntry = _globalKeyboardHook.AddKeyCombo(id, _lastKeyCombo);
 
         this.TextBoxComboId.Clear();
         this.TextBoxKeyCombo.Clear();
+
+        if (!isNewEntry) {
+            for (int i = 0; i < this.ListBoxCombos.Items.Count; i++) {
+                string? item = (string)this.ListBoxCombos.Items[i];
+                if (item.StartsWith($"{id}: ")) {
+                    this.ListBoxCombos.Items.RemoveAt(i);
+                    break;
+                }
+            }
+        }
 
         AddComboListItem(id, _lastKeyCombo);
         _lastKeyCombo = null;
@@ -523,8 +534,9 @@ public partial class Main : Form {
             this.NotifyIcon.Dispose();
             _scanTimer.Stop();
 
-            if (!MqttIsConnected) {
+            if (MqttIsConnected) {
                 await _bridge!.StopAsync();
+                SetMqttStatus(MqttStatus.Disconnected);
             }
 
             return;
