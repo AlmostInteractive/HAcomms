@@ -81,27 +81,26 @@ partial class Main {
         NotifyIcon.Text = "HAcomms";
         NotifyIcon.Visible = true;
         NotifyIcon.DoubleClick += NotifyIcon_DoubleClick;
-        NotifyIcon.ContextMenuStrip = contextMenu;
         // 
         // contextMenu
         // 
         contextMenu.Items.AddRange(new ToolStripItem[] { showToolStripMenuItem, exitToolStripMenuItem1 });
         contextMenu.Name = "contextMenu";
-        contextMenu.Size = new Size(181, 70);
+        contextMenu.Size = new Size(104, 48);
         // 
         // showToolStripMenuItem
         // 
         showToolStripMenuItem.Name = "showToolStripMenuItem";
-        showToolStripMenuItem.Size = new Size(180, 22);
+        showToolStripMenuItem.Size = new Size(103, 22);
         showToolStripMenuItem.Text = "&Show";
-        showToolStripMenuItem.Click += showToolStripMenuItem_Click;
+        showToolStripMenuItem.Click += ShowToolStripMenuItem_Click;
         // 
         // exitToolStripMenuItem1
         // 
         exitToolStripMenuItem1.Name = "exitToolStripMenuItem1";
-        exitToolStripMenuItem1.Size = new Size(180, 22);
+        exitToolStripMenuItem1.Size = new Size(103, 22);
         exitToolStripMenuItem1.Text = "E&xit";
-        exitToolStripMenuItem1.Click += exitToolStripMenuItem1_Click;
+        exitToolStripMenuItem1.Click += ExitProgram;
         // 
         // LblStatusMqtt
         // 
@@ -334,7 +333,7 @@ partial class Main {
         exitToolStripMenuItem.Name = "exitToolStripMenuItem";
         exitToolStripMenuItem.Size = new Size(116, 22);
         exitToolStripMenuItem.Text = "E&xit";
-        exitToolStripMenuItem.Click += MenuItemExit_Click;
+        exitToolStripMenuItem.Click += ExitProgram;
         // 
         // label1
         // 
@@ -463,9 +462,9 @@ partial class Main {
         Icon = Properties.Resources.AppIcon;
         MainMenuStrip = menuMain;
         MaximizeBox = false;
+        MinimizeBox = false;
         Name = "Main";
         Text = "HAcomms";
-        Closing += Main_Closing;
         Shown += Main_Shown;
         contextMenu.ResumeLayout(false);
         GroupLiteralRegex.ResumeLayout(false);

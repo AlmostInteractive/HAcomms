@@ -13,7 +13,7 @@ namespace HAcomms.Forms;
 public partial class Main : Form {
     private const int WM_SYSCOMMAND = 0x112;
     private const IntPtr SC_MINIMIZE = 0XF020;
-    
+
     private bool _startMinimized;
     private bool _settingsLoaded;
     private HAcommsModel? _model;
@@ -30,6 +30,7 @@ public partial class Main : Form {
     private bool _recordKeys;
     private KeyCombination? _lastKeyCombo;
     private readonly Audio _audio;
+    private bool _wantsExit;
 
     public Main(bool minimized) {
         _startMinimized = minimized;
@@ -51,6 +52,7 @@ public partial class Main : Form {
     private void ShowMainForm() {
         this.Show();
         this.WindowState = FormWindowState.Normal;
+        this.TopMost = true;
     }
 
     public async void ReloadSettings() {
@@ -359,9 +361,7 @@ public partial class Main : Form {
         _model!.FireKeyboardComboEvent(("combo_id", e.ComboId));
     }
 
-    private void OnVolumeChanged(AudioVolumeNotificationData data) {
-        _model!.Mute = _audio.IsMuted;
-    }
+    private void OnVolumeChanged(AudioVolumeNotificationData data) { _model!.Mute = _audio.IsMuted; }
 
     private void Main_Shown(object sender, EventArgs e) {
         if (_startMinimized) {
@@ -385,8 +385,6 @@ public partial class Main : Form {
     private void NotifyIcon_DoubleClick(object sender, EventArgs e) { ShowMainForm(); }
 
     private void MenuItemSettings_Click(object sender, EventArgs e) { ShowSettingsDialog(); }
-
-    private void MenuItemExit_Click(object sender, EventArgs e) { this.Close(); }
 
     private void ListBox_SelectedIndexChanged(object sender, EventArgs e) {
         var listBox = sender as ListBox;
@@ -473,13 +471,9 @@ public partial class Main : Form {
             return;
         }
 
+        _globalKeyboardHook.AddKeyCombo(id, _lastKeyCombo);
+
         this.TextBoxComboId.Clear();
-
-        if (!_globalKeyboardHook.AddKeyCombo(id, _lastKeyCombo)) {
-            this.TextBoxComboId.Focus();
-            return;
-        }
-
         this.TextBoxKeyCombo.Clear();
 
         AddComboListItem(id, _lastKeyCombo);
@@ -501,19 +495,12 @@ public partial class Main : Form {
         SaveKeyCombos();
     }
 
-    private async void Main_Closing(object sender, EventArgs e) {
-        this.NotifyIcon.Visible = false;
-        this.NotifyIcon.Icon?.Dispose();
-        this.NotifyIcon.Dispose();
-        _scanTimer.Stop();
+    private void ShowToolStripMenuItem_Click(object sender, EventArgs e) { ShowMainForm(); }
 
-        if (!MqttIsConnected)
-            await _bridge!.StopAsync();
+    private void ExitProgram(object sender, EventArgs e) {
+        _wantsExit = true;
+        this.Close();
     }
-
-    private void showToolStripMenuItem_Click(object sender, EventArgs e) { ShowMainForm(); }
-
-    private void exitToolStripMenuItem1_Click(object sender, EventArgs e) { this.Close(); }
 
     protected override void WndProc(ref Message m) {
         if (m.Msg == WM_SYSCOMMAND && m.WParam == SC_MINIMIZE) {
@@ -523,5 +510,33 @@ public partial class Main : Form {
         }
 
         base.WndProc(ref m);
+    }
+
+    protected override async void OnFormClosing(FormClosingEventArgs e) {
+        base.OnFormClosing(e);
+        if (_wantsExit
+            || e.CloseReason == CloseReason.WindowsShutDown
+            || e.CloseReason == CloseReason.ApplicationExitCall
+            || e.CloseReason == CloseReason.TaskManagerClosing) {
+            this.NotifyIcon.Visible = false;
+            this.NotifyIcon.Icon?.Dispose();
+            this.NotifyIcon.Dispose();
+            _scanTimer.Stop();
+
+            if (!MqttIsConnected) {
+                await _bridge!.StopAsync();
+            }
+
+            return;
+        }
+
+        if (!Properties.Settings.Default.WarnedOnExit) {
+            MessageBox.Show(this, "This will minimize HAcomms to the system tray. To exit, use the Menu command 'Exit'.", "Minimize", MessageBoxButtons.OK);
+            Properties.Settings.Default.WarnedOnExit = true;
+            Properties.Settings.Default.Save();
+        }
+
+        e.Cancel = true;
+        this.Hide();
     }
 }

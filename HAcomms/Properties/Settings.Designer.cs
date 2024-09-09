@@ -81,5 +81,17 @@ namespace HAcomms.Properties {
                 this["KeyCombos"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool WarnedOnExit {
+            get {
+                return ((bool)(this["WarnedOnExit"]));
+            }
+            set {
+                this["WarnedOnExit"] = value;
+            }
+        }
     }
 }
