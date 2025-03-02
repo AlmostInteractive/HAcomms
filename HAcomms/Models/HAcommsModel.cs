@@ -8,6 +8,7 @@ using NoeticTools.Net2HassMqtt.Entities.Framework;
 namespace HAcomms.Models;
 
 public partial class HAcommsModel : ObservableObject {
+    [ObservableProperty] private bool _isConnected = true;
     [ObservableProperty] private bool _watchedEntriesPresent;
     [ObservableProperty] private bool _webcamInUse;
     [ObservableProperty] private bool _microphoneInUse;
@@ -20,6 +21,11 @@ public partial class HAcommsModel : ObservableObject {
             .WithFriendlyName("HAcomms")
             .WithManufacturer("AlmostInteractive")
             .WithModel("HA Desktop Comms");
+        
+        device.HasBinarySensor(config => config.OnModel(this)
+            .WithStatusProperty(nameof(IsConnected))
+            .WithFriendlyName("Is Connected")
+            .WithNodeId("is_connected"));   
 
         device.HasBinarySensor(config => config.OnModel(this)
             .WithStatusProperty(nameof(WatchedEntriesPresent))
