@@ -93,5 +93,17 @@ namespace HAcomms.Properties {
                 this["WarnedOnExit"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string MqttBroker_ClientId {
+            get {
+                return ((string)(this["MqttBroker_ClientId"]));
+            }
+            set {
+                this["MqttBroker_ClientId"] = value;
+            }
+        }
     }
 }

@@ -7,18 +7,19 @@ using NoeticTools.Net2HassMqtt.Entities.Framework;
 
 namespace HAcomms.Models;
 
-public partial class HAcommsModel : ObservableObject {
+public partial class HAcommsModel(string clientId) : ObservableObject {
     [ObservableProperty] private bool _isConnected = true;
     [ObservableProperty] private bool _watchedEntriesPresent;
     [ObservableProperty] private bool _webcamInUse;
     [ObservableProperty] private bool _microphoneInUse;
     [ObservableProperty] private bool _mute;
     public event EventHandler<HassEventArgs>? KeyboardComboEvent;
-    
+
 
     public INet2HassMqttBridge BuildBridge(IConfigurationRoot appConfig) {
-        var device = new DeviceBuilder().WithId("hacomms")
-            .WithFriendlyName("HAcomms")
+        string cleanClientId = clientId.ToLower().Replace(" ", "_");
+        var device = new DeviceBuilder().WithId(cleanClientId)
+            .WithFriendlyName(clientId)
             .WithManufacturer("AlmostInteractive")
             .WithModel("HA Desktop Comms");
         
@@ -54,7 +55,7 @@ public partial class HAcommsModel : ObservableObject {
             .WithFriendlyName("Keyboard Combo Event")
             .WithNodeId("keyboard_combo_event"));
 
-        var mqttOptions = HassMqttClientFactory.CreateQuickStartOptions(Properties.Resources.MqttClientId, appConfig);
+        var mqttOptions = HassMqttClientFactory.CreateQuickStartOptions(cleanClientId, appConfig);
         return new BridgeConfiguration()
             .WithMqttOptions(mqttOptions)
             .HasDevice(device)

@@ -92,8 +92,9 @@ public partial class Main : Form {
         string address = Properties.Settings.Default.MqttBroker_Address;
         string username = Properties.Settings.Default.MqttBroker_Username;
         string password = Properties.Settings.Default.MqttBroker_Password;
+        string clientId = Properties.Settings.Default.MqttBroker_ClientId;
 
-        if (address == "" || username == "" || password == "") {
+        if (address == "" || username == "" || password == "" || clientId == "") {
             return;
         }
 
@@ -147,7 +148,7 @@ public partial class Main : Form {
             })
             .Build();
 
-        _model = new HAcommsModel();
+        _model = new HAcommsModel(Properties.Settings.Default.MqttBroker_ClientId);
         _bridge = _model.BuildBridge(appConfig);
 
         SetMqttStatus(MqttStatus.Connecting);

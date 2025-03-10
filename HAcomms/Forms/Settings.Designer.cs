@@ -32,15 +32,17 @@
             BtnSave = new Button();
             TbMqttAddress = new TextBox();
             LblMqttAddress = new Label();
-            lblMqttUsername = new Label();
+            LblMqttUsername = new Label();
             TbMqttUsername = new TextBox();
-            label1 = new Label();
+            LblMqttPassword = new Label();
             TbMqttPassword = new TextBox();
+            LblClientId = new Label();
+            TbMqttClientId = new TextBox();
             SuspendLayout();
             // 
             // BtnCancel
             // 
-            BtnCancel.Location = new Point(12, 212);
+            BtnCancel.Location = new Point(12, 269);
             BtnCancel.Name = "BtnCancel";
             BtnCancel.Size = new Size(100, 25);
             BtnCancel.TabIndex = 2;
@@ -50,7 +52,7 @@
             // 
             // BtnSave
             // 
-            BtnSave.Location = new Point(272, 212);
+            BtnSave.Location = new Point(272, 269);
             BtnSave.Name = "BtnSave";
             BtnSave.Size = new Size(100, 25);
             BtnSave.TabIndex = 3;
@@ -60,7 +62,7 @@
             // 
             // TbMqttAddress
             // 
-            TbMqttAddress.Location = new Point(12, 35);
+            TbMqttAddress.Location = new Point(12, 92);
             TbMqttAddress.Name = "TbMqttAddress";
             TbMqttAddress.Size = new Size(360, 23);
             TbMqttAddress.TabIndex = 4;
@@ -70,7 +72,7 @@
             LblMqttAddress.AccessibleDescription = "";
             LblMqttAddress.AccessibleName = "";
             LblMqttAddress.AccessibleRole = AccessibleRole.StaticText;
-            LblMqttAddress.Location = new Point(12, 18);
+            LblMqttAddress.Location = new Point(12, 75);
             LblMqttAddress.Name = "LblMqttAddress";
             LblMqttAddress.Size = new Size(100, 14);
             LblMqttAddress.TabIndex = 5;
@@ -78,49 +80,69 @@
             // 
             // lblMqttUsername
             // 
-            lblMqttUsername.AccessibleDescription = "";
-            lblMqttUsername.AccessibleName = "";
-            lblMqttUsername.AccessibleRole = AccessibleRole.StaticText;
-            lblMqttUsername.Location = new Point(12, 75);
-            lblMqttUsername.Name = "lblMqttUsername";
-            lblMqttUsername.Size = new Size(100, 14);
-            lblMqttUsername.TabIndex = 7;
-            lblMqttUsername.Text = "MQTT Username:";
+            LblMqttUsername.AccessibleDescription = "";
+            LblMqttUsername.AccessibleName = "";
+            LblMqttUsername.AccessibleRole = AccessibleRole.StaticText;
+            LblMqttUsername.Location = new Point(12, 132);
+            LblMqttUsername.Name = "LblMqttUsername";
+            LblMqttUsername.Size = new Size(100, 14);
+            LblMqttUsername.TabIndex = 7;
+            LblMqttUsername.Text = "MQTT Username:";
             // 
             // TbMqttUsername
             // 
-            TbMqttUsername.Location = new Point(12, 92);
+            TbMqttUsername.Location = new Point(12, 149);
             TbMqttUsername.Name = "TbMqttUsername";
             TbMqttUsername.Size = new Size(360, 23);
             TbMqttUsername.TabIndex = 6;
             // 
             // label1
             // 
-            label1.AccessibleDescription = "";
-            label1.AccessibleName = "";
-            label1.AccessibleRole = AccessibleRole.StaticText;
-            label1.Location = new Point(12, 132);
-            label1.Name = "label1";
-            label1.Size = new Size(100, 14);
-            label1.TabIndex = 9;
-            label1.Text = "MQTT Password:";
+            LblMqttPassword.AccessibleDescription = "";
+            LblMqttPassword.AccessibleName = "";
+            LblMqttPassword.AccessibleRole = AccessibleRole.StaticText;
+            LblMqttPassword.Location = new Point(12, 189);
+            LblMqttPassword.Name = "LblMqttPassword";
+            LblMqttPassword.Size = new Size(100, 14);
+            LblMqttPassword.TabIndex = 9;
+            LblMqttPassword.Text = "MQTT Password:";
             // 
             // TbMqttPassword
             // 
-            TbMqttPassword.Location = new Point(12, 149);
+            TbMqttPassword.Location = new Point(12, 206);
             TbMqttPassword.Name = "TbMqttPassword";
             TbMqttPassword.Size = new Size(360, 23);
             TbMqttPassword.TabIndex = 8;
+            // 
+            // label2
+            // 
+            LblClientId.AccessibleDescription = "";
+            LblClientId.AccessibleName = "";
+            LblClientId.AccessibleRole = AccessibleRole.StaticText;
+            LblClientId.Location = new Point(12, 18);
+            LblClientId.Name = "TbMqttClientId";
+            LblClientId.Size = new Size(100, 17);
+            LblClientId.TabIndex = 11;
+            LblClientId.Text = "Client Id:";
+            // 
+            // textBox1
+            // 
+            TbMqttClientId.Location = new Point(12, 35);
+            TbMqttClientId.Name = "TbMqttClientId";
+            TbMqttClientId.Size = new Size(360, 23);
+            TbMqttClientId.TabIndex = 10;
             // 
             // Settings
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(384, 255);
+            ClientSize = new Size(384, 314);
             ControlBox = false;
-            Controls.Add(label1);
+            Controls.Add(LblClientId);
+            Controls.Add(TbMqttClientId);
+            Controls.Add(LblMqttPassword);
             Controls.Add(TbMqttPassword);
-            Controls.Add(lblMqttUsername);
+            Controls.Add(LblMqttUsername);
             Controls.Add(TbMqttUsername);
             Controls.Add(LblMqttAddress);
             Controls.Add(TbMqttAddress);
@@ -144,9 +166,11 @@
         private Button BtnSave;
         private TextBox TbMqttAddress;
         private Label LblMqttAddress;
-        private Label lblMqttUsername;
+        private Label LblMqttUsername;
         private TextBox TbMqttUsername;
-        private Label label1;
+        private Label LblMqttPassword;
         private TextBox TbMqttPassword;
+        private Label LblClientId;
+        private TextBox TbMqttClientId;
     }
 }

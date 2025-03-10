@@ -58,15 +58,6 @@ namespace HAcomms.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to hacommsclient.
-        /// </summary>
-        internal static string MqttClientId {
-            get {
-                return ResourceManager.GetString("MqttClientId", resourceCulture);
-            }
-        }
 
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
